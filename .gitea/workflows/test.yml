@@ -8,18 +8,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # - name: Setup Node.js 24
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 24
-
-      - name: Test Download Hugo
+      - name: Setup Hugo
         uses: ./
         with:
           repo-name: 'gohugoio/hugo'
           file-name: '~hugo_extended_[^a-z]'
           token: ${{ secrets.GH_TOKEN }}
 
+      - name: Setup RClone
+        uses: ./
+        with:
+          repo-name: 'rclone/rclone'
+          file-type: 'package'
+          token: ${{ secrets.GH_TOKEN }}
+
       - name: Verify Installation
         run: |
           hugo version
+          rclone version
