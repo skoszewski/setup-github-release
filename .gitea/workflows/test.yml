@@ -13,18 +13,11 @@ jobs:
         with:
           node-version: 24
 
-      - name: Test Download Hugo (Regex)
+      - name: Test Download Hugo
         uses: ./
         with:
           repo-name: 'gohugoio/hugo'
-          file-name: '~hugo_extended'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Test Download Hugo (Default)
-        uses: ./
-        with:
-          repo-name: 'gohugoio/hugo'
+          file-name: '~hugo_extended_[^a-z]'
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
