@@ -1,6 +1,6 @@
 node_modules/
-dist/
 lib/
 *.log
+*.map
 .DS_Store
 Notes.md
