@@ -19,7 +19,6 @@ jobs:
         uses: ./
         with:
           repo-name: 'rclone/rclone'
-          file-type: 'package'
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Verify Installation
