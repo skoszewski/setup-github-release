@@ -1,43 +1,81 @@
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
 import * as path from 'path';
+import * as os from 'os';
 
 async function run() {
   try {
-    const toolUrl = core.getInput('tool-url', { required: true });
-    const toolName = core.getInput('tool-name', { required: true });
-    const version = core.getInput('version') || 'latest';
+    const repoName = core.getInput('repo-name', { required: true });
+    let fileName = core.getInput('file-name');
+    const useRegex = core.getInput('use-regex') === 'true';
+    const token = core.getInput('token') || process.env.GITHUB_TOKEN;
 
-    core.info(`Downloading ${toolName} from ${toolUrl}...`);
+    if (!fileName) {
+      throw new Error('file-name must be provided (either as a string or regex pattern)');
+    }
 
-    // Download the tool
-    const downloadPath = await tc.downloadTool(toolUrl);
+    // Platform detection
+    const platform = os.platform(); // 'linux', 'darwin', 'win32'
+    let arch = os.arch(); // 'x64', 'arm64'
+
+    // Normalize OS/Arch names for common release patterns
+    const osMap: Record<string, string> = { 'win32': 'windows', 'darwin': 'darwin' };
+    const archMap: Record<string, string> = { 'x64': 'amd64' };
+
+    const currentOS = osMap[platform] || platform;
+    const currentArch = archMap[arch] || arch;
+
+    // Replace placeholders in fileName
+    fileName = fileName.replace(/{{SYSTEM}}/g, currentOS).replace(/{{ARCH}}/g, currentArch);
+
+    const url = `https://api.github.com/repos/${repoName}/releases/latest`;
+    const headers: Record<string, string> = {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'setup-github-release-action'
+    };
+    if (token) {
+      headers['Authorization'] = `token ${token}`;
+    }
+
+    core.info(`Fetching latest release information for ${repoName}...`);
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch release: ${response.statusText} (${response.status})`);
+    }
+
+    const data: any = await response.json();
+    let asset;
+    if (useRegex) {
+      const regex = new RegExp(fileName);
+      asset = data.assets.find((a: any) => regex.test(a.name));
+    } else {
+      asset = data.assets.find((a: any) => a.name === fileName);
+    }
+
+    if (!asset) {
+      throw new Error(`Asset matching "${fileName}" not found in release ${data.tag_name}`);
+    }
+
+    const downloadUrl = asset.browser_download_url;
+    core.info(`Downloading ${asset.name} from ${downloadUrl}...`);
+
+    const downloadPath = await tc.downloadTool(downloadUrl);
     core.info(`Downloaded to ${downloadPath}`);
 
-    // If it's an archive, we might need to extract it. 
-    // For simplicity, let's assume it's just a binary for now, 
-    // or we can add extraction logic if the URL ends in .tar.gz, .zip etc.
     let toolDir: string;
-    if (toolUrl.endsWith('.tar.gz')) {
+    if (asset.name.endsWith('.tar.gz')) {
       toolDir = await tc.extractTar(downloadPath);
-    } else if (toolUrl.endsWith('.zip')) {
+    } else if (asset.name.endsWith('.zip')) {
       toolDir = await tc.extractZip(downloadPath);
     } else {
-      // Treat as a direct binary download
-      // We might need to make it executable and put it in a directory
       toolDir = path.dirname(downloadPath);
-      // Optional: rename if needed, but downloadTool usually gives a random name
+      // For single binaries, we often need to ensure they have the right name and are executable
+      // However, downloadTool gives a random name. Let's stick to adding the directory to PATH for now.
     }
 
     core.info(`Tool extracted/located at ${toolDir}`);
-
-    // Add to path
     core.addPath(toolDir);
     core.info(`Added ${toolDir} to PATH`);
-
-    // In a real scenario, we'd use tc.cacheDir to cache it for future runs
-    // cachedPath = await tc.cacheDir(toolDir, toolName, version);
-    // core.addPath(cachedPath);
 
   } catch (error) {
     if (error instanceof Error) {

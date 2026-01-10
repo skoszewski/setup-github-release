@@ -1,17 +1,21 @@
-name: 'Setup Tool'
-description: 'Download and setup a tool'
+name: 'setup-github-release'
+description: 'Install a tool from a GitHub release and add it to the PATH'
 author: 'GitHub Copilot'
 inputs:
-  tool-url:
-    description: 'The URL of the tool to download'
+  repo-name:
+    description: 'The GitHub repository name (e.g., owner/repo)'
     required: true
-  tool-name:
-    description: 'The name of the tool'
-    required: true
-  version:
-    description: 'The version of the tool'
+  file-name:
+    description: 'The name of the asset to download (or a regex pattern if use-regex is true)'
     required: false
-    default: 'latest'
+  use-regex:
+    description: 'Whether to treat file-name as a regular expression'
+    required: false
+    default: 'false'
+  token:
+    description: 'The GitHub token to use for authentication'
+    required: false
+    default: ${{ github.token }}
 runs:
   using: 'node24'
   main: 'dist/index.js'

@@ -1,19 +1,13 @@
-# Setup Tool Action
+# Setup GitHub Release Action
 
-This GitHub/Gitea Action downloads a tool from a specified URL and adds it to the system PATH.
+This GitHub/Gitea Action downloads a release from a specified GitHub repository and adds it to the runners tool cache.
 
 ## Usage
 
 ```yaml
 - uses: ./
   with:
-    tool-url: 'https://example.com/tool.tar.gz'
-    tool-name: 'mytool'
-    version: '1.0.0'
+    repo-name: 'owner/repo'
+    file-name: 'tool-linux.*'
+    use-regex: 'true'
 ```
-
-## Developing
-
-1. Install dependencies: `npm install`
-2. Build the action: `npm run build`
-3. Test locally: (add tests if needed)
