@@ -108,6 +108,17 @@ async function run() {
       throw new Error(`No asset found matching the criteria in release ${data.tag_name}`);
     }
 
+    const version = data.tag_name.replace(/^v/, '');
+    const toolName = repoName.split('/').pop() || repoName;
+
+    // Check if the tool is already in the cache
+    const cachedDir = tc.find(toolName, version, arch);
+    if (cachedDir) {
+      core.info(`Found ${toolName} version ${version} in cache at ${cachedDir}`);
+      core.addPath(cachedDir);
+      return;
+    }
+
     const downloadUrl = asset.browser_download_url;
     core.info(`Downloading ${asset.name} from ${downloadUrl}...`);
 
@@ -140,7 +151,14 @@ async function run() {
       }
     }
 
-    core.addPath(toolDir);
+    core.info(`Tool extracted/located at ${toolDir}`);
+
+    // Cache the tool
+    const finalCachedDir = await tc.cacheDir(toolDir, toolName, version, arch);
+    core.info(`Cached ${toolName} version ${version} to ${finalCachedDir}`);
+
+    core.addPath(finalCachedDir);
+    core.info(`Added ${finalCachedDir} to PATH`);
 
   } catch (error) {
     if (error instanceof Error) {
