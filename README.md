@@ -1,4 +1,4 @@
-# setup-github-release
+# Setup GitHub Release Action
 
 This GitHub/Gitea Action downloads a tool from a GitHub release based on platform-aware selection rules and adds it to the system PATH.
 
