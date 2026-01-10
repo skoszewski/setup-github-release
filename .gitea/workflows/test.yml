@@ -8,12 +8,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Test Download Hugo
+      - name: Test Download Hugo (Regex)
         uses: ./
         with:
           repo-name: 'gohugoio/hugo'
-          file-name: 'hugo_extended_.*_{{SYSTEM}}-{{ARCH}}\.tar\.gz'
-          use-regex: 'true'
+          file-name: '~hugo_extended'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Test Download Hugo (Default)
+        uses: ./
+        with:
+          repo-name: 'gohugoio/hugo'
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

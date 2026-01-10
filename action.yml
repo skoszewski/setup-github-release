@@ -1,17 +1,17 @@
 name: 'setup-github-release'
 description: 'Install a tool from a GitHub release and add it to the PATH'
-author: 'GitHub Copilot'
+author: 'Slawomir Koszewski with GitHub Copilot assistance'
 inputs:
   repo-name:
     description: 'The GitHub repository name (e.g., owner/repo)'
     required: true
   file-name:
-    description: 'The name of the asset to download (or a regex pattern if use-regex is true)'
+    description: 'The name or regex pattern (prefixed with ~) of the asset file to download.'
     required: false
-  use-regex:
-    description: 'Whether to treat file-name as a regular expression'
+  file-type:
+    description: 'The type of the file to be downloaded (archive, package, or custom regex).'
     required: false
-    default: 'false'
+    default: 'archive'
   token:
     description: 'The GitHub token to use for authentication'
     required: false

@@ -7,26 +7,35 @@ async function run() {
   try {
     const repoName = core.getInput('repo-name', { required: true });
     let fileName = core.getInput('file-name');
-    const useRegex = core.getInput('use-regex') === 'true';
+    const fileType = core.getInput('file-type') || 'archive';
     const token = core.getInput('token') || process.env.GITHUB_TOKEN;
 
-    if (!fileName) {
-      throw new Error('file-name must be provided (either as a string or regex pattern)');
-    }
-
-    // Platform detection
+    // Detect system and architecture
     const platform = os.platform(); // 'linux', 'darwin', 'win32'
-    let arch = os.arch(); // 'x64', 'arm64'
+    const arch = os.arch(); // 'x64', 'arm64'
 
-    // Normalize OS/Arch names for common release patterns
-    const osMap: Record<string, string> = { 'win32': 'windows', 'darwin': 'darwin' };
-    const archMap: Record<string, string> = { 'x64': 'amd64' };
+    const systemPatterns: Record<string, string> = {
+      linux: 'linux',
+      darwin: '(darwin|macos|mac)',
+      win32: '(windows|win)'
+    };
 
-    const currentOS = osMap[platform] || platform;
-    const currentArch = archMap[arch] || arch;
+    const archPatterns: Record<string, string> = {
+      x64: '(x86_64|x64|amd64)',
+      arm64: '(aarch64|arm64)'
+    };
 
-    // Replace placeholders in fileName
-    fileName = fileName.replace(/{{SYSTEM}}/g, currentOS).replace(/{{ARCH}}/g, currentArch);
+    const systemPattern = systemPatterns[platform] || platform;
+    const archPattern = archPatterns[arch] || arch;
+
+    let extPattern: string;
+    if (fileType === 'archive') {
+      extPattern = '\\.(zip|tar\\.gz|tar|tgz|7z)';
+    } else if (fileType === 'package') {
+      extPattern = '\\.(deb|rpm|pkg)';
+    } else {
+      extPattern = fileType;
+    }
 
     const url = `https://api.github.com/repos/${repoName}/releases/latest`;
     const headers: Record<string, string> = {
@@ -45,15 +54,46 @@ async function run() {
 
     const data: any = await response.json();
     let asset;
-    if (useRegex) {
-      const regex = new RegExp(fileName);
-      asset = data.assets.find((a: any) => regex.test(a.name));
+
+    if (!fileName) {
+      // Default matching rule
+      const pattern = `${systemPattern}[_-]${archPattern}.*${extPattern}$`;
+      const regex = new RegExp(pattern, 'i');
+      core.info(`No file-name provided. Using default pattern: ${pattern}`);
+      const matchingAssets = data.assets.filter((a: any) => regex.test(a.name));
+      if (matchingAssets.length > 1) {
+        throw new Error(`Multiple assets matched the default criteria: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
+      }
+      asset = matchingAssets[0];
+    } else if (fileName.startsWith('~')) {
+      // Regex matching rule
+      let pattern = fileName.substring(1);
+      const hasSystem = pattern.includes('{{SYSTEM}}');
+      const hasArch = pattern.includes('{{ARCH}}');
+      const hasEnd = pattern.endsWith('$');
+
+      if (!hasSystem && !hasArch && !hasEnd) {
+        pattern += `.*${systemPattern}[_-]${archPattern}.*${extPattern}$`;
+      } else if (hasSystem && hasArch && !hasEnd) {
+        pattern += `.*${extPattern}$`;
+      }
+
+      pattern = pattern.replace(/{{SYSTEM}}/g, systemPattern).replace(/{{ARCH}}/g, archPattern);
+      const regex = new RegExp(pattern, 'i');
+      core.info(`Using regex pattern: ${pattern}`);
+      const matchingAssets = data.assets.filter((a: any) => regex.test(a.name));
+      if (matchingAssets.length > 1) {
+        throw new Error(`Multiple assets matched the criteria: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
+      }
+      asset = matchingAssets[0];
     } else {
+      // Literal matching rule
+      core.info(`Using literal match for: ${fileName}`);
       asset = data.assets.find((a: any) => a.name === fileName);
     }
 
     if (!asset) {
-      throw new Error(`Asset matching "${fileName}" not found in release ${data.tag_name}`);
+      throw new Error(`No asset found matching the criteria in release ${data.tag_name}`);
     }
 
     const downloadUrl = asset.browser_download_url;
