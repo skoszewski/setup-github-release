@@ -1,0 +1,17 @@
+name: 'Setup Tool'
+description: 'Download and setup a tool'
+author: 'GitHub Copilot'
+inputs:
+  tool-url:
+    description: 'The URL of the tool to download'
+    required: true
+  tool-name:
+    description: 'The name of the tool'
+    required: true
+  version:
+    description: 'The version of the tool'
+    required: false
+    default: 'latest'
+runs:
+  using: 'node24'
+  main: 'dist/index.js'
