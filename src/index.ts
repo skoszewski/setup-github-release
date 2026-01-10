@@ -112,7 +112,6 @@ async function run() {
     core.info(`Downloading ${asset.name} from ${downloadUrl}...`);
 
     const downloadPath = await tc.downloadTool(downloadUrl);
-    core.info(`Downloaded to ${downloadPath}`);
 
     let toolDir: string;
     const nameLower = asset.name.toLowerCase();
@@ -141,9 +140,7 @@ async function run() {
       }
     }
 
-    core.info(`Tool extracted/located at ${toolDir}`);
     core.addPath(toolDir);
-    core.info(`Added ${toolDir} to PATH`);
 
   } catch (error) {
     if (error instanceof Error) {
