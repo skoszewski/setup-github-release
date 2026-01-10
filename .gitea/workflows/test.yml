@@ -19,7 +19,7 @@ jobs:
           repo-name: 'gohugoio/hugo'
           file-name: '~hugo_extended_[^a-z]'
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Verify Installation
         run: |
