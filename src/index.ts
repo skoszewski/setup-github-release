@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
 import * as path from 'path';
 import * as os from 'os';
+import * as fs from 'fs';
 
 async function run() {
   try {
@@ -56,32 +57,43 @@ async function run() {
     let asset;
 
     if (!fileName) {
-      // Default matching rule
+      // Rule 1: Default matching rule
       const pattern = `${systemPattern}[_-]${archPattern}.*${extPattern}$`;
       const regex = new RegExp(pattern, 'i');
       core.info(`No file-name provided. Using default pattern: ${pattern}`);
       const matchingAssets = data.assets.filter((a: any) => regex.test(a.name));
+      if (matchingAssets.length === 0) {
+        throw new Error(`No assets matched the default criteria: ${pattern}`);
+      }
       if (matchingAssets.length > 1) {
         throw new Error(`Multiple assets matched the default criteria: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
       }
       asset = matchingAssets[0];
     } else if (fileName.startsWith('~')) {
-      // Regex matching rule
+      // Rule 3: Regex matching rule
       let pattern = fileName.substring(1);
       const hasSystem = pattern.includes('{{SYSTEM}}');
       const hasArch = pattern.includes('{{ARCH}}');
+      const hasExt = pattern.includes('{{EXT_PATTERN}}');
       const hasEnd = pattern.endsWith('$');
 
-      if (!hasSystem && !hasArch && !hasEnd) {
-        pattern += `.*${systemPattern}[_-]${archPattern}.*${extPattern}$`;
-      } else if (hasSystem && hasArch && !hasEnd) {
-        pattern += `.*${extPattern}$`;
+      if (!hasSystem && !hasArch && !hasExt && !hasEnd) {
+        pattern += `.*{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$`;
+      } else if (hasSystem && hasArch && !hasExt && !hasEnd) {
+        pattern += `.*{{EXT_PATTERN}}$`;
       }
 
-      pattern = pattern.replace(/{{SYSTEM}}/g, systemPattern).replace(/{{ARCH}}/g, archPattern);
-      const regex = new RegExp(pattern, 'i');
-      core.info(`Using regex pattern: ${pattern}`);
+      const finalPattern = pattern
+        .replace(/{{SYSTEM}}/g, systemPattern)
+        .replace(/{{ARCH}}/g, archPattern)
+        .replace(/{{EXT_PATTERN}}/g, extPattern);
+
+      const regex = new RegExp(finalPattern, 'i');
+      core.info(`Using regex pattern: ${finalPattern}`);
       const matchingAssets = data.assets.filter((a: any) => regex.test(a.name));
+      if (matchingAssets.length === 0) {
+        throw new Error(`No assets matched the regex: ${finalPattern}`);
+      }
       if (matchingAssets.length > 1) {
         throw new Error(`Multiple assets matched the criteria: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
       }
@@ -103,14 +115,30 @@ async function run() {
     core.info(`Downloaded to ${downloadPath}`);
 
     let toolDir: string;
-    if (asset.name.endsWith('.tar.gz')) {
+    const nameLower = asset.name.toLowerCase();
+
+    if (nameLower.endsWith('.tar.gz') || nameLower.endsWith('.tar') || nameLower.endsWith('.tgz')) {
       toolDir = await tc.extractTar(downloadPath);
-    } else if (asset.name.endsWith('.zip')) {
+    } else if (nameLower.endsWith('.zip')) {
       toolDir = await tc.extractZip(downloadPath);
+    } else if (nameLower.endsWith('.7z')) {
+      toolDir = await tc.extract7z(downloadPath);
+    } else if (nameLower.endsWith('.xar') || nameLower.endsWith('.pkg')) {
+      toolDir = await tc.extractXar(downloadPath);
     } else {
-      toolDir = path.dirname(downloadPath);
-      // For single binaries, we often need to ensure they have the right name and are executable
-      // However, downloadTool gives a random name. Let's stick to adding the directory to PATH for now.
+      // Treat as a direct binary or non-extractable file
+      toolDir = path.join(path.dirname(downloadPath), 'bin');
+      const destPath = path.join(toolDir, asset.name);
+
+      if (!fs.existsSync(toolDir)) {
+        fs.mkdirSync(toolDir, { recursive: true });
+      }
+      fs.renameSync(downloadPath, destPath);
+
+      // Make it executable on Linux/macOS
+      if (process.platform !== 'win32') {
+        fs.chmodSync(destPath, '755');
+      }
     }
 
     core.info(`Tool extracted/located at ${toolDir}`);
