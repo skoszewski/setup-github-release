@@ -18,6 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check Authentication
+        uses: ./
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+
       - name: Go ACME Setup
         uses: ./
         with:
