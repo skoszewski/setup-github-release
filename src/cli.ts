@@ -132,7 +132,7 @@ Options:
       }
       throw err;
     }
-    
+
     if (process.platform !== 'win32') {
       fs.chmodSync(destPath, '755');
     }
