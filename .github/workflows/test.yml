@@ -18,6 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Let's test the token first.
       - name: Check Authentication
         uses: skoszewski/setup-github-release/check-token@v1
 
