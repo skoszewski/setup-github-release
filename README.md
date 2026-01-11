@@ -1,6 +1,47 @@
 # Setup GitHub Release Action
 
-This GitHub/Gitea Action downloads a tool from a GitHub release, extracts it, automatically finds the executable, and adds it to the system PATH. It supports platform-aware selection, recursive binary search, and tool caching.
+This project implements a GitHub Action (`setup-github-release`) and a CLI tool (`install-github-release`) that downloads a release asset from a specified GitHub repository, extracts it, searches for a binary within the extracted files, and prepares the runtime environment.
+
+## Installation / Setup
+
+### GitHub/Gitea Action
+
+Add the action to your workflow. Authenticate with `github.token` (default) or a custom token for Gitea/private repos.
+
+```yaml
+- name: Install Tool
+  uses: koszewscy/setup-github-release@v1
+  with:
+    repository: 'owner/repo'
+```
+
+### CLI Tool
+
+Install the CLI tool on any destination system with Node.js 24 or newer.
+
+**Using npx (Quick Run):**
+
+```bash
+npx install-github-release rclone/rclone
+```
+
+**Global Installation:**
+
+```bash
+npm install -g install-github-release
+install-github-release rclone/rclone
+```
+
+**From Source:**
+
+```bash
+git clone https://github.com/koszewscy/setup-github-release
+cd setup-github-release
+npm install
+npm run build
+# The CLI is available at dist/cli.js
+node dist/cli.js <repository>
+```
 
 ## Features
 
@@ -30,7 +71,7 @@ For projects with multiple binary versions, you can use a regex pattern (prefixe
 
 ```yaml
 - name: Install Extended Hugo
-  uses: koszewscy/setup-github-release@v1
+  uses: skoszewski/setup-github-release@v1
   with:
     repository: 'gohugoio/hugo'
     file-name: '~hugo_extended_[^a-z]' # Regex to match extended version
@@ -42,7 +83,7 @@ If the binary name is different from the repository name, like in the example of
 
 ```yaml
 - name: Install GitHub CLI
-  uses: koszewscy/setup-github-release@v1
+  uses: skoszewski/setup-github-release@v1
   with:
     repository: 'cli/cli'
     binary-name: 'gh' # Searches for 'gh' (or 'gh.exe') inside the extracted release
@@ -53,19 +94,84 @@ If the binary name is different from the repository name, like in the example of
 If you are unsure how the binary is named, use the `debug` flag to list all files in the unpacked asset, or download the asset manually to inspect its structure.
 
 ```yaml
-- uses: koszewscy/setup-github-release@v1
+- uses: skoszewski/setup-github-release@v1
   with:
     repository: 'owner/repo'
     debug: true
 ```
 
-## Inputs
+## Inputs / Options
 
-- `repository` (required): GitHub repository in `owner/repo` format.
-- `file-name` (optional): Literal name or regex pattern (if starts with `~`) to match the asset.
-- `binary-name` (optional): The name or regex pattern (if starts with `~`) of the binary to find. Defaults to the repository name.
-- `file-type` (optional, default: `archive`): Predefined keywords `archive`, `package`, or a custom regex pattern.
-- `debug` (optional, default: `false`): Set to `true` to log the contents of the unpacked asset.
-- `token` (optional): GitHub token for authentication (defaults to `${{ github.token }}` that is an equivalent of `${{ secrets.GITHUB_TOKEN }}`). Use `${{ secrets.GITEA_TOKEN }}` for Gitea, or create a personal access token.
+The following inputs are available for the GitHub Action, and as options for the CLI tool:
 
-> **Important:** Default authentication will will only work if the action is used within GitHub workflow. For Gitea, you must provide a token explicitly.
+- `repository` (required): The GitHub repository in the format `owner/repo` from which to download the release.
+- `file-name` (optional): The name or the regex pattern (prefixed with `~`) of the asset file to download from the release.
+- `binary-name` (optional): The name or regex pattern (prefixed with `~`) of the binary to search for within the downloaded asset. Defaults to the repository name.
+- `file-type` (optional, default: 'archive'): The regex pattern to identify the type of the file to be downloaded. There are two predefined keywords:
+    - 'archive': matches common archive file extensions like .zip, .tar.gz, .tar, .tgz, .7z.
+    - 'package': matches common package file extensions like .deb, .rpm, .pkg.
+    - or a custom regex pattern can be provided to match specific file types.
+- `update-cache` (optional, default: 'false'): When set to 'false', the action will use the cached version of the tool if it is already available. If set to 'true', the action will check the latest release and update the cache if a newer version is found. If set to 'always', it will always download and install, updating the cache regardless.
+- `debug` (optional, default: 'false'): When set to `true`, the action will log the contents of the unpacked directory to the console.
+- `token` (optional): A GitHub token for authentication, useful for accessing private repositories or increasing rate limits.
+
+> **Important:** Default authentication will only work if the action is used within GitHub workflow. For Gitea or the CLI, you must provide a token explicitly (e.g. `GITHUB_TOKEN` environment variable).
+
+## CLI Usage
+
+The `install-github-release` tool follows the same logic as the Action.
+
+```bash
+Usage: install-github-release [options] <repository>
+
+Arguments:
+  repository                 The GitHub repository (owner/repo)
+
+Options:
+  -f, --file-name <name>     Asset file name or regex pattern (prefixed with ~)
+  -b, --binary-name <name>   Binary to search for (prefixed with ~ for regex)
+  -t, --file-type <type>     'archive', 'package', or custom regex (default: archive)
+  -k, --token <token>        GitHub token
+  -d, --debug                Enable debug logging
+  -h, --help                 Show this help message
+```
+
+## Asset Selection Procedure
+
+The list of assets from the latest release is filtered based on the following rules:
+
+1. If neither `file-name` nor `file-type` is provided, the tool defaults to selecting assets that match the following regular expression: `{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$`, where:
+   - `{{SYSTEM}}` is replaced with the detected operating system regex.
+   - `{{ARCH}}` is replaced with the detected architecture regex.
+   - `{{EXT_PATTERN}}` is a regex pattern defined by the `file-type` input (defaulting to 'archive' if not specified).
+
+2. If `file-name` is provided literally, the tool uses it directly to match the asset name by using exact string comparison.
+
+3. If `file-name` is provided as a regex pattern (prefixed with `~`), then:
+    - If the pattern does not end with `$` and does not include any placeholders, the tool appends `.*{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$` to the provided pattern.
+    - If it already ends with `$` or includes all three placeholders, the tool uses it as-is to match the asset name using regex.
+    - If only `{{SYSTEM}}` and `{{ARCH}}` placeholders are included, the tool appends `.*{{EXT_PATTERN}}$`.
+
+4. If `file-type` is not equal to 'archive' or 'package', it is treated as a custom regex pattern to match the file extension.
+
+5. The tool applies the constructed regex pattern to filter the assets from the latest release.
+
+6. If multiple assets match the criteria, the tool fails.
+
+7. After download and extraction, the tool recursively searches for the binary specified by `binary-name` (or the repository name). If found, the directory containing the binary is used as the tool directory and added to the PATH (or used for installation). If the binary is not found, the tool fails.
+
+8. `{{SYSTEM}}` is replaced with the detected operating system regex:
+    - For Linux: `linux`.
+    - For MacOS: `(darwin|macos|mac|osx)`.
+    - For Windows: `(windows|win)`.
+
+9. `{{ARCH}}` is replaced with the detected architecture regex:
+    - For x64: `(x86_64|x64|amd64)`.
+    - For arm64: `(aarch64|arm64)`.
+
+10. All regular expression matches are case-insensitive.
+
+## License
+
+MIT
+
