@@ -4,10 +4,41 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
 
+function findBinary(dir: string, pattern: string | RegExp, debug: boolean): string | undefined {
+  const items = fs.readdirSync(dir);
+  if (debug) {
+    core.info(`Searching for binary in ${dir}...`);
+    items.forEach(item => core.info(` - ${item}`));
+  }
+
+  for (const item of items) {
+    const fullPath = path.join(dir, item);
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      const found = findBinary(fullPath, pattern, debug);
+      if (found) return found;
+    } else {
+      let isMatch = false;
+      if (pattern instanceof RegExp) {
+        isMatch = pattern.test(item);
+      } else {
+        isMatch = item === pattern;
+        // On Windows, also check for .exe extension if the pattern doesn't have it
+        if (!isMatch && process.platform === 'win32' && !pattern.toLowerCase().endsWith('.exe')) {
+          isMatch = item.toLowerCase() === `${pattern.toLowerCase()}.exe`;
+        }
+      }
+      if (isMatch) return fullPath;
+    }
+  }
+  return undefined;
+}
+
 async function run() {
   try {
     const repoName = core.getInput('repo-name', { required: true });
     let fileName = core.getInput('file-name');
+    const binaryInput = core.getInput('binary-name');
     const fileType = core.getInput('file-type') || 'archive';
     const debug = core.getBooleanInput('debug');
     const token = core.getInput('token') || process.env.GITHUB_TOKEN;
@@ -111,6 +142,7 @@ async function run() {
 
     const version = data.tag_name.replace(/^v/, '');
     const toolName = repoName.split('/').pop() || repoName;
+    const binaryName = binaryInput || toolName;
 
     // Check if the tool is already in the cache
     const cachedDir = tc.find(toolName, version, arch);
@@ -153,22 +185,29 @@ async function run() {
       }
     }
 
-    // Handle nested directories in archives
-    if (/\.(zip|tar(\.gz)?|tgz|7z)$/i.test(nameLower)) {
-      const items = fs.readdirSync(toolDir);
-      
-      if (debug) {
-        core.info(`Contents of ${toolDir}:`);
-        items.forEach(item => core.info(` - ${item}`));
-      }
-
-      if (items.length === 1 && fs.statSync(path.join(toolDir, items[0])).isDirectory()) {
-        core.info(`Detected single root directory in archive, descending into: ${items[0]}`);
-        toolDir = path.join(toolDir, items[0]);
-      }
+    // Find the binary within the extracted/prepared directory
+    let binaryPattern: string | RegExp;
+    if (binaryName.startsWith('~')) {
+      binaryPattern = new RegExp(binaryName.substring(1), 'i');
+      core.info(`Searching for binary matching regex: ${binaryName.substring(1)}`);
+    } else {
+      binaryPattern = binaryName;
+      core.info(`Searching for binary named: ${binaryName}`);
     }
 
-    core.info(`Tool extracted/located at ${toolDir}`);
+    const binaryPath = findBinary(toolDir, binaryPattern, debug);
+    if (!binaryPath) {
+      throw new Error(`Could not find binary "${binaryName}" in the extracted asset.`);
+    }
+
+    // The tool directory is the one containing the binary
+    toolDir = path.dirname(binaryPath);
+    core.info(`Binary found at ${binaryPath}. Setting tool directory to ${toolDir}`);
+
+    // Make binary executable just in case it's not
+    if (process.platform !== 'win32') {
+      fs.chmodSync(binaryPath, '755');
+    }
 
     // Cache the tool
     const finalCachedDir = await tc.cacheDir(toolDir, toolName, version, arch);

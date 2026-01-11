@@ -8,6 +8,9 @@ inputs:
   file-name:
     description: 'The name or regex pattern (prefixed with ~) of the asset file to download.'
     required: false
+  binary-name:
+    description: 'The name or regex pattern (prefixed with ~) of the binary to search for within the asset. Defaults to the repository name.'
+    required: false
   file-type:
     description: 'The type of the file to be downloaded (archive, package, or custom regex).'
     required: false
