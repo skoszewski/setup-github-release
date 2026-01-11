@@ -12,6 +12,10 @@ inputs:
     description: 'The type of the file to be downloaded (archive, package, or custom regex).'
     required: false
     default: 'archive'
+  debug:
+    description: 'When set to true, displays the contents of the unpacked archive or directory.'
+    required: false
+    default: 'false'
   token:
     description: 'The GitHub token to use for authentication'
     required: false

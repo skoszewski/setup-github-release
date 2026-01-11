@@ -9,6 +9,7 @@ async function run() {
     const repoName = core.getInput('repo-name', { required: true });
     let fileName = core.getInput('file-name');
     const fileType = core.getInput('file-type') || 'archive';
+    const debug = core.getBooleanInput('debug');
     const token = core.getInput('token') || process.env.GITHUB_TOKEN;
 
     // Detect system and architecture
@@ -155,6 +156,12 @@ async function run() {
     // Handle nested directories in archives
     if (/\.(zip|tar(\.gz)?|tgz|7z)$/i.test(nameLower)) {
       const items = fs.readdirSync(toolDir);
+      
+      if (debug) {
+        core.info(`Contents of ${toolDir}:`);
+        items.forEach(item => core.info(` - ${item}`));
+      }
+
       if (items.length === 1 && fs.statSync(path.join(toolDir, items[0])).isDirectory()) {
         core.info(`Detected single root directory in archive, descending into: ${items[0]}`);
         toolDir = path.join(toolDir, items[0]);
