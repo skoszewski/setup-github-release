@@ -1,0 +1,14 @@
+name: 'check-token'
+description: 'Verify the validity of a GitHub token'
+author: 'Slawomir Koszewski with GitHub Copilot assistance'
+inputs:
+  repository:
+    description: 'The GitHub repository to check (e.g., owner/repo)'
+    required: false
+    default: 'actions/checkout'
+  token:
+    description: 'The GitHub token to verify'
+    required: false
+runs:
+  using: 'node24'
+  main: '../dist/check-token-action.js'

@@ -150,13 +150,29 @@ Options:
 
 ## GitHub Token Verification
 
-The project includes a utility to verify the validity of your GitHub token:
+The project includes a utility to verify the validity of your GitHub token.
+
+### CLI Utility
 
 ```bash
 check-github-token <token>
 ```
 
 If no token is provided as an argument, it will attempt to read from the `GITHUB_TOKEN` environment variable.
+
+### GitHub Action
+
+You can also use the `check-token` subaction in your workflows:
+
+```yaml
+- name: Verify Token
+  uses: koszewscy/setup-github-release/check-token@v1
+  with:
+    repository: 'actions/checkout' # Optional, defaults to actions/checkout
+    token: ${{ secrets.MY_TOKEN }}
+```
+
+If the `token` input is not provided, it will read from the `GITHUB_TOKEN` environment variable.
 
 ## Asset Selection Procedure
 
