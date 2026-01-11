@@ -11,20 +11,20 @@ jobs:
       - name: Go ACME Setup
         uses: ./
         with:
-          repo-name: 'go-acme/lego'
+          repository: 'go-acme/lego'
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Setup Hugo
         uses: ./
         with:
-          repo-name: 'gohugoio/hugo'
+          repository: 'gohugoio/hugo'
           file-name: '~hugo_extended_[^a-z]'
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Setup RClone
         uses: ./
         with:
-          repo-name: 'rclone/rclone'
+          repository: 'rclone/rclone'
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Verify Installation

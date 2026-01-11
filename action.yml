@@ -2,7 +2,7 @@ name: 'setup-github-release'
 description: 'Install a tool from a GitHub release and add it to the PATH'
 author: 'Slawomir Koszewski with GitHub Copilot assistance'
 inputs:
-  repo-name:
+  repository:
     description: 'The GitHub repository name (e.g., owner/repo)'
     required: true
   file-name:

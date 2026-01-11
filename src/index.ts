@@ -36,7 +36,7 @@ function findBinary(dir: string, pattern: string | RegExp, debug: boolean): stri
 
 async function run() {
   try {
-    const repoName = core.getInput('repo-name', { required: true });
+    const repository = core.getInput('repository', { required: true });
     let fileName = core.getInput('file-name');
     const binaryInput = core.getInput('binary-name');
     const fileType = core.getInput('file-type') || 'archive';
@@ -70,7 +70,7 @@ async function run() {
       extPattern = fileType;
     }
 
-    const url = `https://api.github.com/repos/${repoName}/releases/latest`;
+    const url = `https://api.github.com/repos/${repository}/releases/latest`;
     const headers: Record<string, string> = {
       'Accept': 'application/vnd.github.v3+json',
       'User-Agent': 'setup-github-release-action'
@@ -79,7 +79,7 @@ async function run() {
       headers['Authorization'] = `token ${token}`;
     }
 
-    core.info(`Fetching latest release information for ${repoName}...`);
+    core.info(`Fetching latest release information for ${repository}...`);
     const response = await fetch(url, { headers });
     if (!response.ok) {
       throw new Error(`Failed to fetch release: ${response.statusText} (${response.status})`);
@@ -141,7 +141,7 @@ async function run() {
     }
 
     const version = data.tag_name.replace(/^v/, '');
-    const toolName = repoName.split('/').pop() || repoName;
+    const toolName = repository.split('/').pop() || repository;
     const binaryName = binaryInput || toolName;
 
     // Check if the tool is already in the cache

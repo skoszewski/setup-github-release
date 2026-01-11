@@ -19,7 +19,7 @@ The action will automatically detect your OS (Linux, Windows, macOS) and archite
 - name: Install Hugo
   uses: koszewscy/setup-github-release@v1
   with:
-    repo-name: 'go-acme/lego'
+    repository: 'go-acme/lego'
 ```
 
 > **Note:** RClone is an example of a project that provides a binary in a subdirectory inside the archive. The action will find it automatically.
@@ -32,7 +32,7 @@ For projects with multiple binary versions, you can use a regex pattern (prefixe
 - name: Install Extended Hugo
   uses: koszewscy/setup-github-release@v1
   with:
-    repo-name: 'gohugoio/hugo'
+    repository: 'gohugoio/hugo'
     file-name: '~hugo_extended_[^a-z]' # Regex to match extended version
 ```
 
@@ -44,7 +44,7 @@ If the binary name is different from the repository name, like in the example of
 - name: Install GitHub CLI
   uses: koszewscy/setup-github-release@v1
   with:
-    repo-name: 'cli/cli'
+    repository: 'cli/cli'
     binary-name: 'gh' # Searches for 'gh' (or 'gh.exe') inside the extracted release
 ```
 
@@ -55,13 +55,13 @@ If you are unsure how the binary is named, use the `debug` flag to list all file
 ```yaml
 - uses: koszewscy/setup-github-release@v1
   with:
-    repo-name: 'owner/repo'
+    repository: 'owner/repo'
     debug: true
 ```
 
 ## Inputs
 
-- `repo-name` (required): GitHub repository in `owner/repo` format.
+- `repository` (required): GitHub repository in `owner/repo` format.
 - `file-name` (optional): Literal name or regex pattern (if starts with `~`) to match the asset.
 - `binary-name` (optional): The name or regex pattern (if starts with `~`) of the binary to find. Defaults to the repository name.
 - `file-type` (optional, default: `archive`): Predefined keywords `archive`, `package`, or a custom regex pattern.
