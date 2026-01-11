@@ -29,5 +29,10 @@ jobs:
 
       - name: Verify Installation
         run: |
+          echo "Verifying installed tools..."
+          printf "\nGo ACME Lego:\n"
+          lego -v
+          printf "\nHugo:\n"
           hugo version
+          printf "\nRClone:\n"
           rclone version
