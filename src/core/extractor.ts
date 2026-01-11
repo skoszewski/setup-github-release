@@ -18,11 +18,23 @@ export async function extractAsset(filePath: string, destDir: string): Promise<v
     }
   } else if (name.endsWith('.zip')) {
     if (process.platform === 'win32') {
-      const command = `Expand-Archive -Path "${filePath}" -DestinationPath "${destDir}" -Force`;
-      const result = spawnSync('powershell', ['-Command', command]);
-      if (result.status !== 0) {
-        throw new Error(`powershell Expand-Archive failed with status ${result.status}: ${result.stderr.toString()}`);
+      // Modern Windows 10/11 has tar that handles zip
+      const tarResult = spawnSync('tar', ['-xf', filePath, '-C', destDir]);
+      if (tarResult.status === 0) return;
+
+      // Fallback: Use .NET ZipFile class to bypass PowerShell module trust issues (Microsoft.PowerShell.Archive)
+      // We escape single quotes for PowerShell.
+      const escapedFilePath = filePath.replace(/'/g, "''");
+      const escapedDestDir = destDir.replace(/'/g, "''");
+      const dotNetCommand = `Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('${escapedFilePath}', '${escapedDestDir}')`;
+
+      // Try pwsh (PowerShell 7) then powershell (Windows PowerShell)
+      for (const shell of ['pwsh', 'powershell']) {
+        const result = spawnSync(shell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', dotNetCommand]);
+        if (result.status === 0) return;
       }
+
+      throw new Error(`Extraction failed: Both tar and PowerShell fallback failed. Make sure your system can extract ZIP files.`);
     } else {
       const result = spawnSync('unzip', ['-q', filePath, '-d', destDir]);
       if (result.status !== 0) {

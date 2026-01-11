@@ -94,17 +94,21 @@ Options:
     if (values['install-path']) {
       installDir = path.resolve(values['install-path']);
     } else {
-      const isRoot = process.getuid && process.getuid() === 0;
-
-      if (isRoot) {
-        installDir = '/usr/local/bin';
+      if (process.platform === 'win32') {
+        const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+        installDir = path.join(localAppData, 'bin');
       } else {
-        const homeBin = path.join(os.homedir(), 'bin');
-        if (fs.existsSync(homeBin)) {
-          installDir = homeBin;
-        } else {
-          // Fallback or error? Let's use a local bin if possible or /usr/local/bin (might fail)
+        const isRoot = process.getuid && process.getuid() === 0;
+
+        if (isRoot) {
           installDir = '/usr/local/bin';
+        } else {
+          const homeBin = path.join(os.homedir(), 'bin');
+          if (fs.existsSync(homeBin)) {
+            installDir = homeBin;
+          } else {
+            installDir = '/usr/local/bin';
+          }
         }
       }
     }
@@ -117,7 +121,17 @@ Options:
     const destPath = path.join(installDir, finalName);
 
     console.log(`Installing ${finalName} to ${destPath}...`);
-    fs.copyFileSync(binaryPath, destPath);
+    try {
+      fs.copyFileSync(binaryPath, destPath);
+    } catch (err: any) {
+      if (err.code === 'EBUSY') {
+        throw new Error(`The file ${destPath} is currently in use. Please close any running instances and try again.`);
+      }
+      if (err.code === 'EACCES' || err.code === 'EPERM') {
+        throw new Error(`Permission denied while installing to ${destPath}. Try running with sudo or as administrator, or use -p to specify a custom path.`);
+      }
+      throw err;
+    }
     
     if (process.platform !== 'win32') {
       fs.chmodSync(destPath, '755');
