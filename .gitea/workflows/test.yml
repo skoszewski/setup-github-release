@@ -8,6 +8,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Go ACME Setup
+        uses: ./
+        with:
+          repo-name: 'go-acme/lego'
+          token: ${{ secrets.GH_TOKEN }}
+
       - name: Setup Hugo
         uses: ./
         with:
