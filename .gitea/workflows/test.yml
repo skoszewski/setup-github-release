@@ -19,7 +19,6 @@ jobs:
         uses: ./
         with:
           repo-name: 'rclone/rclone'
-          debug: 'true'
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Verify Installation
