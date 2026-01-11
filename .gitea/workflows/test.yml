@@ -1,5 +1,15 @@
 name: Test Action
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.gitea/workflows/test.yml'
+      - 'action.yml'
+      - 'src/**'
+      - 'dist/**'
+      - 'package.json'
+      - 'package-lock.json'
 
 jobs:
   test:
