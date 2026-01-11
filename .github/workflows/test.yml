@@ -1,0 +1,45 @@
+name: Test Action
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/test.yml'
+      - 'action.yml'
+      - 'src/**'
+      - 'dist/**'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Go ACME Setup
+        uses: skoszewski/setup-github-release@v1
+        with:
+          repository: 'go-acme/lego'
+
+      - name: Setup Hugo
+        uses: skoszewski/setup-github-release@v1
+        with:
+          repository: 'gohugoio/hugo'
+          file-name: '~hugo_extended_[^a-z]'
+
+      - name: Setup RClone
+        uses: skoszewski/setup-github-release@v1
+        with:
+          repository: 'rclone/rclone'
+
+      - name: Verify Installation
+        run: |
+          echo "Verifying installed tools..."
+          printf "\nGo ACME Lego:\n"
+          lego -v
+          printf "\nHugo:\n"
+          hugo version
+          printf "\nRClone:\n"
+          rclone version
