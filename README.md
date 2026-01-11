@@ -19,28 +19,32 @@ Add the action to your workflow. Authenticate with `github.token` (default) or a
 
 Install the CLI tool on any destination system with Node.js 24 or newer.
 
-**Using npx (Quick Run):**
-
-```bash
-npx install-github-release rclone/rclone
-```
-
-**Global Installation:**
-
-```bash
-npm install -g install-github-release
-install-github-release rclone/rclone
-```
-
 **From Source:**
+
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/koszewscy/setup-github-release
 cd setup-github-release
+```
+
+2. Install dependencies and build the project:
+
+```bash
 npm install
 npm run build
-# The CLI is available at dist/cli.js
-node dist/cli.js <repository>
+```
+
+3. Install the tool locally:
+
+```bash
+npm install -g .
+```
+
+After installation, the tool will be available as `install-github-release`:
+
+```bash
+install-github-release rclone/rclone
 ```
 
 ## Features
@@ -71,7 +75,7 @@ For projects with multiple binary versions, you can use a regex pattern (prefixe
 
 ```yaml
 - name: Install Extended Hugo
-  uses: skoszewski/setup-github-release@v1
+  uses: koszewscy/setup-github-release@v1
   with:
     repository: 'gohugoio/hugo'
     file-name: '~hugo_extended_[^a-z]' # Regex to match extended version
@@ -83,7 +87,7 @@ If the binary name is different from the repository name, like in the example of
 
 ```yaml
 - name: Install GitHub CLI
-  uses: skoszewski/setup-github-release@v1
+  uses: koszewscy/setup-github-release@v1
   with:
     repository: 'cli/cli'
     binary-name: 'gh' # Searches for 'gh' (or 'gh.exe') inside the extracted release
@@ -94,7 +98,7 @@ If the binary name is different from the repository name, like in the example of
 If you are unsure how the binary is named, use the `debug` flag to list all files in the unpacked asset, or download the asset manually to inspect its structure.
 
 ```yaml
-- uses: skoszewski/setup-github-release@v1
+- uses: koszewscy/setup-github-release@v1
   with:
     repository: 'owner/repo'
     debug: true
