@@ -15,6 +15,10 @@ inputs:
     description: 'The type of the file to be downloaded (archive, package, or custom regex).'
     required: false
     default: 'archive'
+  update-cache:
+    description: 'How to handle the tool cache (false, true, or always). Defaults to false.'
+    required: false
+    default: 'false'
   debug:
     description: 'When set to true, displays the contents of the unpacked archive or directory.'
     required: false

@@ -40,12 +40,32 @@ async function run() {
     let fileName = core.getInput('file-name');
     const binaryInput = core.getInput('binary-name');
     const fileType = core.getInput('file-type') || 'archive';
+    const updateCache = core.getInput('update-cache') || 'false';
     const debug = core.getBooleanInput('debug');
     const token = core.getInput('token') || process.env.GITHUB_TOKEN;
 
     // Detect system and architecture
     const platform = os.platform(); // 'linux', 'darwin', 'win32'
     const arch = os.arch(); // 'x64', 'arm64'
+
+    const toolName = repository.split('/').pop() || repository;
+
+    // Rule for update-cache: 'false' means use ANY cached version if available
+    if (updateCache === 'false') {
+      const allVersions = tc.findAllVersions(toolName, arch);
+      if (allVersions.length > 0) {
+        // Simple sort to pick the 'latest' local version
+        const latestVersion = allVersions.sort().pop();
+        if (latestVersion) {
+          const cachedDir = tc.find(toolName, latestVersion, arch);
+          if (cachedDir) {
+            core.info(`Found ${toolName} version ${latestVersion} in local cache (update-cache: false)`);
+            core.addPath(cachedDir);
+            return;
+          }
+        }
+      }
+    }
 
     const systemPatterns: Record<string, string> = {
       linux: 'linux',
@@ -141,15 +161,16 @@ async function run() {
     }
 
     const version = data.tag_name.replace(/^v/, '');
-    const toolName = repository.split('/').pop() || repository;
     const binaryName = binaryInput || toolName;
 
-    // Check if the tool is already in the cache
-    const cachedDir = tc.find(toolName, version, arch);
-    if (cachedDir) {
-      core.info(`Found ${toolName} version ${version} in cache at ${cachedDir}`);
-      core.addPath(cachedDir);
-      return;
+    // Check if the tool is already in the cache (if not 'always' update)
+    if (updateCache !== 'always') {
+      const cachedDir = tc.find(toolName, version, arch);
+      if (cachedDir) {
+        core.info(`Found ${toolName} version ${version} in cache at ${cachedDir}`);
+        core.addPath(cachedDir);
+        return;
+      }
     }
 
     const downloadUrl = asset.browser_download_url;
