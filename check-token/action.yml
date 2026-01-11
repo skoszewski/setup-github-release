@@ -9,6 +9,7 @@ inputs:
   token:
     description: 'The GitHub token to verify'
     required: false
+    default: ${{ github.token }}
 runs:
   using: 'node24'
   main: '../dist/check-token-action.js'
