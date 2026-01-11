@@ -10,7 +10,7 @@ Add the action to your workflow. Authenticate with `github.token` (default) or a
 
 ```yaml
 - name: Install Tool
-  uses: koszewscy/setup-github-release@v1
+  uses: skoszewski/setup-github-release@v1
   with:
     repository: 'owner/repo'
 ```
@@ -24,7 +24,7 @@ Install the CLI tool on any destination system with Node.js 24 or newer.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/koszewscy/setup-github-release
+git clone https://github.com/skoszewski/setup-github-release
 cd setup-github-release
 ```
 
@@ -65,8 +65,8 @@ install-github-release rclone/rclone
 The action will automatically detect your OS (Linux, Windows, macOS) and architecture (x64, ARM64) and look for a matching archive. It will search for a binary named after the repository.
 
 ```yaml
-- name: Install Hugo
-  uses: koszewscy/setup-github-release@v1
+- name: Install LEGO
+  uses: skoszewski/setup-github-release@v1
   with:
     repository: 'go-acme/lego'
 ```
@@ -79,7 +79,7 @@ For projects with multiple binary versions, you can use a regex pattern (prefixe
 
 ```yaml
 - name: Install Extended Hugo
-  uses: koszewscy/setup-github-release@v1
+  uses: skoszewski/setup-github-release@v1
   with:
     repository: 'gohugoio/hugo'
     file-name: '~hugo_extended_[^a-z]' # Regex to match extended version
@@ -91,7 +91,7 @@ If the binary name is different from the repository name, like in the example of
 
 ```yaml
 - name: Install GitHub CLI
-  uses: koszewscy/setup-github-release@v1
+  uses: skoszewski/setup-github-release@v1
   with:
     repository: 'cli/cli'
     binary-name: 'gh' # Searches for 'gh' (or 'gh.exe') inside the extracted release
@@ -102,7 +102,7 @@ If the binary name is different from the repository name, like in the example of
 If you are unsure how the binary is named, use the `debug` flag to list all files in the unpacked asset, or download the asset manually to inspect its structure.
 
 ```yaml
-- uses: koszewscy/setup-github-release@v1
+- uses: skoszewski/setup-github-release@v1
   with:
     repository: 'owner/repo'
     debug: true
@@ -166,7 +166,7 @@ You can also use the `check-token` subaction in your workflows:
 
 ```yaml
 - name: Verify Token
-  uses: koszewscy/setup-github-release/check-token@v1
+  uses: skoszewski/setup-github-release/check-token@v1
   with:
     repository: 'actions/checkout' # Optional, defaults to actions/checkout
     token: ${{ secrets.MY_TOKEN }}
@@ -203,7 +203,7 @@ The list of assets from the latest release is filtered based on the following ru
 8. `{{SYSTEM}}` is replaced with the detected operating system regex:
 
     - For Linux: `linux`.
-    - For MacOS: `(darwin|macos|mac|osx)`.
+    - For MacOS: `(darwin|macos|mac)`.
     - For Windows: `(windows|win)`.
 
 9. `{{ARCH}}` is replaced with the detected architecture regex:
