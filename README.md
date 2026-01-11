@@ -41,7 +41,11 @@ npm run build
 npm install -g .
 ```
 
-After installation, the tool will be available as `install-github-release`:
+After installation, the tool will be available as `install-github-release`. By default, it installs binaries to:
+
+- Linux/macOS (root): `/usr/local/bin`
+- Linux/macOS (user): `~/bin` (if exists) or `/usr/local/bin`
+- Windows: `%LOCALAPPDATA%\bin`
 
 ```bash
 install-github-release rclone/rclone
@@ -112,9 +116,11 @@ The following inputs are available for the GitHub Action, and as options for the
 - `file-name` (optional): The name or the regex pattern (prefixed with `~`) of the asset file to download from the release.
 - `binary-name` (optional): The name or regex pattern (prefixed with `~`) of the binary to search for within the downloaded asset. Defaults to the repository name.
 - `file-type` (optional, default: 'archive'): The regex pattern to identify the type of the file to be downloaded. There are two predefined keywords:
+
     - 'archive': matches common archive file extensions like .zip, .tar.gz, .tar, .tgz, .7z.
     - 'package': matches common package file extensions like .deb, .rpm, .pkg.
     - or a custom regex pattern can be provided to match specific file types.
+
 - `install-path` (optional, CLI only): Custom installation directory for the CLI tool.
 - `update-cache` (optional, default: 'false', Action only): When set to 'false', the action will use the cached version of the tool if it is already available. If set to 'true', the action will check the latest release and update the cache if a newer version is found. If set to 'always', it will always download and install, updating the cache regardless.
 - `debug` (optional, default: 'false'): When set to `true`, the action will log the contents of the unpacked directory to the console.
@@ -147,13 +153,15 @@ Options:
 The list of assets from the latest release is filtered based on the following rules:
 
 1. If neither `file-name` nor `file-type` is provided, the tool defaults to selecting assets that match the following regular expression: `{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$`, where:
-   - `{{SYSTEM}}` is replaced with the detected operating system regex.
-   - `{{ARCH}}` is replaced with the detected architecture regex.
-   - `{{EXT_PATTERN}}` is a regex pattern defined by the `file-type` input (defaulting to 'archive' if not specified).
+
+    - `{{SYSTEM}}` is replaced with the detected operating system regex.
+    - `{{ARCH}}` is replaced with the detected architecture regex.
+    - `{{EXT_PATTERN}}` is a regex pattern defined by the `file-type` input (defaulting to 'archive' if not specified).
 
 2. If `file-name` is provided literally, the tool uses it directly to match the asset name by using exact string comparison.
 
 3. If `file-name` is provided as a regex pattern (prefixed with `~`), then:
+
     - If the pattern does not end with `$` and does not include any placeholders, the tool appends `.*{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$` to the provided pattern.
     - If it already ends with `$` or includes all three placeholders, the tool uses it as-is to match the asset name using regex.
     - If only `{{SYSTEM}}` and `{{ARCH}}` placeholders are included, the tool appends `.*{{EXT_PATTERN}}$`.
@@ -167,11 +175,13 @@ The list of assets from the latest release is filtered based on the following ru
 7. After download and extraction, the tool recursively searches for the binary specified by `binary-name` (or the repository name). If found, the directory containing the binary is used as the tool directory and added to the PATH (or used for installation). If the binary is not found, the tool fails.
 
 8. `{{SYSTEM}}` is replaced with the detected operating system regex:
+
     - For Linux: `linux`.
     - For MacOS: `(darwin|macos|mac|osx)`.
     - For Windows: `(windows|win)`.
 
 9. `{{ARCH}}` is replaced with the detected architecture regex:
+
     - For x64: `(x86_64|x64|amd64)`.
     - For arm64: `(aarch64|arm64)`.
 
