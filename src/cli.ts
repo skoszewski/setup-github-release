@@ -14,6 +14,7 @@ async function run() {
       'file-name': { type: 'string', short: 'f' },
       'binary-name': { type: 'string', short: 'b' },
       'file-type': { type: 'string', short: 't', default: 'archive' },
+      'install-path': { type: 'string', short: 'p' },
       'token': { type: 'string', short: 'k' },
       'debug': { type: 'boolean', short: 'd', default: false },
       'help': { type: 'boolean', short: 'h' }
@@ -32,6 +33,7 @@ Options:
   -f, --file-name <name>     Asset file name or regex pattern (prefixed with ~)
   -b, --binary-name <name>   Binary to search for (prefixed with ~ for regex)
   -t, --file-type <type>     'archive', 'package', or custom regex (default: archive)
+  -p, --install-path <path>  Custom installation directory
   -k, --token <token>        GitHub token
   -d, --debug                Enable debug logging
   -h, --help                 Show this help message
@@ -88,17 +90,22 @@ Options:
 
     // Determine install directory
     let installDir: string;
-    const isRoot = process.getuid && process.getuid() === 0;
 
-    if (isRoot) {
-      installDir = '/usr/local/bin';
+    if (values['install-path']) {
+      installDir = path.resolve(values['install-path']);
     } else {
-      const homeBin = path.join(os.homedir(), 'bin');
-      if (fs.existsSync(homeBin)) {
-        installDir = homeBin;
-      } else {
-        // Fallback or error? Let's use a local bin if possible or /usr/local/bin (might fail)
+      const isRoot = process.getuid && process.getuid() === 0;
+
+      if (isRoot) {
         installDir = '/usr/local/bin';
+      } else {
+        const homeBin = path.join(os.homedir(), 'bin');
+        if (fs.existsSync(homeBin)) {
+          installDir = homeBin;
+        } else {
+          // Fallback or error? Let's use a local bin if possible or /usr/local/bin (might fail)
+          installDir = '/usr/local/bin';
+        }
       }
     }
 

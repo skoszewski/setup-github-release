@@ -115,7 +115,8 @@ The following inputs are available for the GitHub Action, and as options for the
     - 'archive': matches common archive file extensions like .zip, .tar.gz, .tar, .tgz, .7z.
     - 'package': matches common package file extensions like .deb, .rpm, .pkg.
     - or a custom regex pattern can be provided to match specific file types.
-- `update-cache` (optional, default: 'false'): When set to 'false', the action will use the cached version of the tool if it is already available. If set to 'true', the action will check the latest release and update the cache if a newer version is found. If set to 'always', it will always download and install, updating the cache regardless.
+- `install-path` (optional, CLI only): Custom installation directory for the CLI tool.
+- `update-cache` (optional, default: 'false', Action only): When set to 'false', the action will use the cached version of the tool if it is already available. If set to 'true', the action will check the latest release and update the cache if a newer version is found. If set to 'always', it will always download and install, updating the cache regardless.
 - `debug` (optional, default: 'false'): When set to `true`, the action will log the contents of the unpacked directory to the console.
 - `token` (optional): A GitHub token for authentication, useful for accessing private repositories or increasing rate limits.
 
@@ -135,6 +136,7 @@ Options:
   -f, --file-name <name>     Asset file name or regex pattern (prefixed with ~)
   -b, --binary-name <name>   Binary to search for (prefixed with ~ for regex)
   -t, --file-type <type>     'archive', 'package', or custom regex (default: archive)
+  -p, --install-path <path>  Custom installation directory
   -k, --token <token>        GitHub token
   -d, --debug                Enable debug logging
   -h, --help                 Show this help message
