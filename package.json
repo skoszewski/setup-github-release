@@ -4,12 +4,14 @@
   "description": "A GitHub Action and CLI tool to download and install binaries from GitHub releases",
   "main": "dist/index.js",
   "bin": {
-    "install-github-release": "dist/cli.js"
+    "install-github-release": "dist/cli.js",
+    "check-github-token": "dist/check-token.js"
   },
   "scripts": {
     "build:action": "esbuild src/index.ts --bundle --platform=node --target=node24 --outfile=dist/index.js --minify",
     "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node24 --outfile=dist/cli.js --minify --banner:js=\"#!/usr/bin/env node\"",
-    "build": "npm run build:action && npm run build:cli",
+    "build:check-token": "esbuild src/check-token.ts --bundle --platform=node --target=node24 --outfile=dist/check-token.js --minify --banner:js=\"#!/usr/bin/env node\"",
+    "build": "npm run build:action && npm run build:cli && npm run build:check-token",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",

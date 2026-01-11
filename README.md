@@ -148,6 +148,16 @@ Options:
   -h, --help                 Show this help message
 ```
 
+## GitHub Token Verification
+
+The project includes a utility to verify the validity of your GitHub token:
+
+```bash
+check-github-token <token>
+```
+
+If no token is provided as an argument, it will attempt to read from the `GITHUB_TOKEN` environment variable.
+
 ## Asset Selection Procedure
 
 The list of assets from the latest release is filtered based on the following rules:
