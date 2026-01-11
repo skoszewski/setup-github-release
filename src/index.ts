@@ -124,16 +124,17 @@ async function run() {
 
     const downloadPath = await tc.downloadTool(downloadUrl);
 
-    let toolDir: string;
     const nameLower = asset.name.toLowerCase();
+    let toolDir: string;
 
-    if (nameLower.endsWith('.tar.gz') || nameLower.endsWith('.tar') || nameLower.endsWith('.tgz')) {
+    // Determine extraction method based on extension
+    if (/\.(tar\.gz|tar|tgz)$/i.test(nameLower)) {
       toolDir = await tc.extractTar(downloadPath);
-    } else if (nameLower.endsWith('.zip')) {
+    } else if (/\.zip$/i.test(nameLower)) {
       toolDir = await tc.extractZip(downloadPath);
-    } else if (nameLower.endsWith('.7z')) {
+    } else if (/\.7z$/i.test(nameLower)) {
       toolDir = await tc.extract7z(downloadPath);
-    } else if (nameLower.endsWith('.xar') || nameLower.endsWith('.pkg')) {
+    } else if (/\.(xar|pkg)$/i.test(nameLower)) {
       toolDir = await tc.extractXar(downloadPath);
     } else {
       // Treat as a direct binary or non-extractable file
@@ -148,6 +149,15 @@ async function run() {
       // Make it executable on Linux/macOS
       if (process.platform !== 'win32') {
         fs.chmodSync(destPath, '755');
+      }
+    }
+
+    // Handle nested directories in archives
+    if (/\.(zip|tar(\.gz)?|tgz|7z)$/i.test(nameLower)) {
+      const items = fs.readdirSync(toolDir);
+      if (items.length === 1 && fs.statSync(path.join(toolDir, items[0])).isDirectory()) {
+        core.info(`Detected single root directory in archive, descending into: ${items[0]}`);
+        toolDir = path.join(toolDir, items[0]);
       }
     }
 
