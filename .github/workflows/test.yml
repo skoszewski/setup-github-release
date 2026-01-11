@@ -18,6 +18,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check Authentication
+        uses: skoszewski/setup-github-release/check-token@v1
+
       - name: Go ACME Setup
         uses: skoszewski/setup-github-release@v1
         with:
