@@ -1,10 +1,5 @@
 import { PlatformInfo } from './platform';
 
-export interface MatchOptions {
-  fileName?: string;
-  fileType?: string;
-}
-
 function normalizeCustomExtensionPattern(fileType: string): string {
   let pattern = fileType;
 
@@ -89,8 +84,7 @@ function matchSingleAssetByRegex(assets: any[], pattern: string, noMatchError: s
   return matchingAssets[0];
 }
 
-export function getMatchingAsset(assets: any[], platform: PlatformInfo, options: MatchOptions): any {
-  const { fileName, fileType } = options;
+export function getMatchingAsset(assets: any[], platform: PlatformInfo, fileName?: string, fileType?: string): any {
   const extPattern = getExtPattern(fileType, platform.system);
 
   if (!fileName || fileName.startsWith('~')) {

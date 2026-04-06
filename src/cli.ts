@@ -273,10 +273,7 @@ async function run() {
 
     console.log(`Fetching latest release for ${repository}...`);
     const release = await fetchLatestRelease(repository, token);
-    const asset = getMatchingAsset(release.assets, platformInfo, {
-      fileName: options.fileName,
-      fileType: options.fileType
-    });
+    const asset = getMatchingAsset(release.assets, platformInfo, options.fileName, options.fileType);
 
     const version = release.tag_name.replace(/^v/i, '');
     const downloadUrl = asset.browser_download_url;

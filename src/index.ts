@@ -91,10 +91,7 @@ async function run() {
 
     core.info(`Fetching latest release information for ${repository}...`);
     const release = await fetchLatestRelease(repository, token);
-    const asset = getMatchingAsset(release.assets, platformInfo, {
-      fileName: fileNameInput,
-      fileType: fileType
-    });
+    const asset = getMatchingAsset(release.assets, platformInfo, fileNameInput, fileType);
 
     core.info(`Selected asset: ${asset.name}`);
 
