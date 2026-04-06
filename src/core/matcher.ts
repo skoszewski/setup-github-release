@@ -59,6 +59,24 @@ function getExtPattern(fileType: string | undefined, system: string): string {
   return normalizeCustomExtensionPattern(fileType || '');
 }
 
+function matchFilenameString(re: string, pi: PlatformInfo, extRe: string): string {
+  const hasSystem = re.includes('{{SYSTEM}}');
+  const hasArch = re.includes('{{ARCH}}');
+  const hasExt = re.includes('{{EXT_PATTERN}}');
+  const hasEnd = re.endsWith('$');
+
+  const finalRe = (!hasSystem && !hasArch && !hasExt && !hasEnd)
+    ? `${re}.*{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$`
+    : (hasSystem && hasArch && !hasExt && !hasEnd)
+      ? `${re}.*{{EXT_PATTERN}}$`
+      : re;
+
+  return finalRe
+    .replace(/{{SYSTEM}}/g, pi.systemPattern)
+    .replace(/{{ARCH}}/g, pi.archPattern)
+    .replace(/{{EXT_PATTERN}}/g, extRe);
+}
+
 export function getMatchingAsset(assets: any[], platform: PlatformInfo, options: MatchOptions): any {
   const { fileName, fileType } = options;
   const extPattern = getExtPattern(fileType, platform.system);
@@ -77,27 +95,11 @@ export function getMatchingAsset(assets: any[], platform: PlatformInfo, options:
     return matchingAssets[0];
   } else if (fileName.startsWith('~')) {
     // Rule 3: Regex matching rule
-    let pattern = fileName.substring(1);
-    const hasSystem = pattern.includes('{{SYSTEM}}');
-    const hasArch = pattern.includes('{{ARCH}}');
-    const hasExt = pattern.includes('{{EXT_PATTERN}}');
-    const hasEnd = pattern.endsWith('$');
-
-    if (!hasSystem && !hasArch && !hasExt && !hasEnd) {
-      pattern += `.*{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$`;
-    } else if (hasSystem && hasArch && !hasExt && !hasEnd) {
-      pattern += `.*{{EXT_PATTERN}}$`;
-    }
-
-    const finalPattern = pattern
-      .replace(/{{SYSTEM}}/g, platform.systemPattern)
-      .replace(/{{ARCH}}/g, platform.archPattern)
-      .replace(/{{EXT_PATTERN}}/g, extPattern);
-
-    const regex = new RegExp(finalPattern, 'i');
+    const pattern = matchFilenameString(fileName.substring(1), platform, extPattern);
+    const regex = new RegExp(pattern, 'i');
     const matchingAssets = assets.filter((a: any) => regex.test(a.name));
     if (matchingAssets.length === 0) {
-      throw new Error(`No assets matched the regex: ${finalPattern}`);
+      throw new Error(`No assets matched the regex: ${pattern}`);
     }
     if (matchingAssets.length > 1) {
       throw new Error(`Multiple assets matched the criteria: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
