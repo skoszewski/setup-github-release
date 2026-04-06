@@ -28,6 +28,7 @@ jobs:
         with:
           repository: 'go-acme/lego'
           token: ${{ secrets.GH_TOKEN }}
+          update-cache: 'always'
 
       - name: Setup Hugo
         uses: ./
@@ -35,12 +36,14 @@ jobs:
           repository: 'gohugoio/hugo'
           file-name: '~hugo_extended_[^a-z]'
           token: ${{ secrets.GH_TOKEN }}
+          update-cache: 'always'
 
       - name: Setup RClone
         uses: ./
         with:
           repository: 'rclone/rclone'
           token: ${{ secrets.GH_TOKEN }}
+          update-cache: 'always'
 
       - name: Verify Installation
         run: |
