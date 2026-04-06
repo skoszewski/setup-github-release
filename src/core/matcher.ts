@@ -5,20 +5,67 @@ export interface MatchOptions {
   fileType?: string;
 }
 
-export function getMatchingAsset(assets: any[], platform: PlatformInfo, options: MatchOptions): any {
-  const { fileName, fileType = 'archive' } = options;
-  let extPattern: string;
-  if (fileType === 'archive') {
-    extPattern = '\\.(zip|tar\\.gz|tar|tgz|7z)';
-  } else if (fileType === 'package') {
-    extPattern = '\\.(deb|rpm|pkg)';
-  } else {
-    extPattern = fileType;
+function normalizeCustomExtensionPattern(fileType: string): string {
+  let pattern = fileType;
+
+  if (!pattern.endsWith('$')) {
+    pattern += '$';
   }
+
+  if (!pattern.startsWith('\\.')) {
+    pattern = `\\.${pattern}`;
+  }
+
+  return pattern;
+}
+
+function getExtPattern(fileType: string | undefined, system: string): string {
+  const normalizedType = (fileType || '').toLowerCase();
+
+  if (!normalizedType) {
+    if (system === 'linux') {
+      return '\\.(deb|rpm|zip|tar\\.gz|tgz)$';
+    }
+    if (system === 'darwin' || system === 'macos' || system === 'mac' || system === 'osx') {
+      return '\\.(pkg|zip|tar\\.gz|tgz)$';
+    }
+    return '\\.(zip|tar\\.gz|tgz)$';
+  }
+
+  if (normalizedType === 'archive') {
+    return '\\.(zip|tar\\.gz|tgz)$';
+  }
+
+  if (normalizedType === 'package') {
+    return '\\.(deb|pkg|rpm)$';
+  }
+
+  const shorthandTypePatterns: Record<string, string> = {
+    zip: '\\.(zip)$',
+    gzip: '\\.(tar\\.gz|tgz)$',
+    gz: '\\.(tar\\.gz|tgz)$',
+    tar: '\\.(tar)$',
+    'tar.gz': '\\.(tar\\.gz)$',
+    tgz: '\\.(tgz)$',
+    deb: '\\.(deb)$',
+    pkg: '\\.(pkg)$',
+    rpm: '\\.(rpm)$'
+  };
+
+  if (shorthandTypePatterns[normalizedType]) {
+    return shorthandTypePatterns[normalizedType];
+  }
+
+  return normalizeCustomExtensionPattern(fileType || '');
+}
+
+export function getMatchingAsset(assets: any[], platform: PlatformInfo, options: MatchOptions): any {
+  const { fileName, fileType } = options;
+  const extPattern = getExtPattern(fileType, platform.system);
 
   if (!fileName) {
     // Rule 1: Default matching rule
-    const pattern = `${platform.systemPattern}[_-]${platform.archPattern}.*${extPattern}$`;
+    const pattern = `${platform.systemPattern}[_-]${platform.archPattern}.*${extPattern}`;
     const regex = new RegExp(pattern, 'i');
     const matchingAssets = assets.filter((a: any) => regex.test(a.name));
     if (matchingAssets.length === 0) {

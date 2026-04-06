@@ -115,11 +115,17 @@ The following inputs are available for the GitHub Action, and as options for the
 - `repository` (required): The GitHub repository in the format `owner/repo` from which to download the release.
 - `file-name` (optional): The name or the regex pattern (prefixed with `~`) of the asset file to download from the release.
 - `binary-name` (optional): The name or regex pattern (prefixed with `~`) of the binary to search for within the downloaded asset. Defaults to the repository name.
-- `file-type` (optional, default: 'archive'): The regex pattern to identify the type of the file to be downloaded. There are two predefined keywords:
+- `file-type` (optional): Asset type selector.
 
-    - 'archive': matches common archive file extensions like .zip, .tar.gz, .tar, .tgz, .7z.
-    - 'package': matches common package file extensions like .deb, .rpm, .pkg.
-    - or a custom regex pattern can be provided to match specific file types.
+    - `archive`: matches `.zip`, `.tar.gz`, `.tgz`.
+    - `package`: matches `.deb`, `.pkg`, `.rpm`.
+    - short forms: `zip`, `gzip`, `gz`, `tar`, `tar.gz`, `tgz`, `deb`, `pkg`, `rpm`.
+
+  If not provided, selection defaults to OS-aware combined package/archive patterns:
+
+    - Linux: `.deb`, `.rpm`, `.zip`, `.tar.gz`, `.tgz`
+    - macOS: `.pkg`, `.zip`, `.tar.gz`, `.tgz`
+    - other: `.zip`, `.tar.gz`, `.tgz`
 
 - `install-path` (optional, CLI only): Custom installation directory for the CLI tool.
 - `update-cache` (optional, default: 'false', Action only): When set to 'false', the action will use the cached version of the tool if it is already available. If set to 'true', the action will check the latest release and update the cache if a newer version is found. If set to 'always', it will always download and install, updating the cache regardless.
@@ -139,10 +145,19 @@ Arguments:
   repository                 The GitHub repository (owner/repo)
 
 Options:
+  --dry-run [level]          Run in test mode (default level: 1)
+                             Or set TEST_MODE environment variable to a value > 0
+  -l, --list [repository]    List available assets from latest release and exit
+  -a, --app-name <name>      Application name (optional, for output messages)
   -f, --file-name <name>     Asset file name or regex pattern (prefixed with ~)
-  -b, --binary-name <name>   Binary to search for (prefixed with ~ for regex)
-  -t, --file-type <type>     'archive', 'package', or custom regex (default: archive)
+  -b, --binary-name <name>   Binary name (supports source:destination form)
+  -t, --file-type <type>     archive|package|zip|gzip|gz|tar|tar.gz|tgz|deb|pkg|rpm
   -p, --install-path <path>  Custom installation directory
+  -o, --output-directory <path>
+                             Only download selected asset to the specified directory
+  -j, --releases-json        Download latest release JSON only
+  --system <name>            Override detected system for asset matching
+  --arch <name>              Override detected architecture for asset matching
   -k, --token <token>        GitHub token
   -d, --debug                Enable debug logging
   -h, --help                 Show this help message
@@ -178,11 +193,14 @@ If the `token` input is not provided, it will read from the `GITHUB_TOKEN` envir
 
 The list of assets from the latest release is filtered based on the following rules:
 
-1. If neither `file-name` nor `file-type` is provided, the tool defaults to selecting assets that match the following regular expression: `{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$`, where:
+1. If neither `file-name` nor `file-type` is provided, the tool defaults to selecting assets with an OS-aware extension pattern and this regular expression shape: `{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}`, where:
 
     - `{{SYSTEM}}` is replaced with the detected operating system regex.
     - `{{ARCH}}` is replaced with the detected architecture regex.
-    - `{{EXT_PATTERN}}` is a regex pattern defined by the `file-type` input (defaulting to 'archive' if not specified).
+    - `{{EXT_PATTERN}}` is selected by OS:
+      Linux: `\.(deb|rpm|zip|tar\.gz|tgz)$`
+      macOS: `\.(pkg|zip|tar\.gz|tgz)$`
+      other: `\.(zip|tar\.gz|tgz)$`
 
 2. If `file-name` is provided literally, the tool uses it directly to match the asset name by using exact string comparison.
 
@@ -192,7 +210,7 @@ The list of assets from the latest release is filtered based on the following ru
     - If it already ends with `$` or includes all three placeholders, the tool uses it as-is to match the asset name using regex.
     - If only `{{SYSTEM}}` and `{{ARCH}}` placeholders are included, the tool appends `.*{{EXT_PATTERN}}$`.
 
-4. If `file-type` is not equal to 'archive' or 'package', it is treated as a custom regex pattern to match the file extension.
+4. If `file-type` is provided, supported values are: `archive`, `package`, `zip`, `gzip`, `gz`, `tar`, `tar.gz`, `tgz`, `deb`, `pkg`, `rpm`.
 
 5. The tool applies the constructed regex pattern to filter the assets from the latest release.
 

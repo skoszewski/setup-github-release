@@ -1,6 +1,3 @@
-import { getMatchingAsset } from './matcher';
-import { PlatformInfo } from './platform';
-
 export interface ReleaseAsset {
   name: string;
   browser_download_url: string;
@@ -11,8 +8,7 @@ export interface ReleaseInfo {
   assets: ReleaseAsset[];
 }
 
-export async function fetchLatestRelease(repository: string, token?: string): Promise<ReleaseInfo> {
-  const url = `https://api.github.com/repos/${repository}/releases/latest`;
+function getGithubApiHeaders(token?: string): Record<string, string> {
   const headers: Record<string, string> = {
     'Accept': 'application/vnd.github.v3+json',
     'User-Agent': 'setup-github-release-action'
@@ -20,6 +16,12 @@ export async function fetchLatestRelease(repository: string, token?: string): Pr
   if (token) {
     headers['Authorization'] = `token ${token}`;
   }
+  return headers;
+}
+
+export async function fetchLatestRelease(repository: string, token?: string): Promise<ReleaseInfo> {
+  const url = `https://api.github.com/repos/${repository}/releases/latest`;
+  const headers = getGithubApiHeaders(token);
 
   const response = await fetch(url, { headers });
   if (!response.ok) {
@@ -28,6 +30,18 @@ export async function fetchLatestRelease(repository: string, token?: string): Pr
   }
 
   return await response.json() as ReleaseInfo;
+}
+
+export async function fetchLatestReleaseRaw(repository: string, token?: string): Promise<string> {
+  const url = `https://api.github.com/repos/${repository}/releases/latest`;
+  const headers = getGithubApiHeaders(token);
+
+  const response = await fetch(url, { headers });
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(`Failed to fetch latest release for ${repository}: ${response.statusText}. ${body}`);
+  }
+  return body;
 }
 
 export async function downloadAsset(url: string, destPath: string, token?: string): Promise<void> {

@@ -7,6 +7,11 @@ export interface PlatformInfo {
   archPattern: string;
 }
 
+export interface PlatformOverrides {
+  system?: string;
+  arch?: string;
+}
+
 export const systemPatterns: Record<string, string> = {
   linux: 'linux',
   darwin: '(darwin|macos|mac|osx)',
@@ -18,9 +23,9 @@ export const archPatterns: Record<string, string> = {
   arm64: '(aarch64|arm64)'
 };
 
-export function getPlatformInfo(): PlatformInfo {
-  const system = os.platform();
-  const arch = os.arch();
+export function getPlatformInfo(overrides?: PlatformOverrides): PlatformInfo {
+  const system = (overrides?.system || os.platform()).toLowerCase();
+  const arch = (overrides?.arch || os.arch()).toLowerCase();
 
   return {
     system,

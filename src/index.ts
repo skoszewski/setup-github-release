@@ -1,19 +1,71 @@
 import * as core from '@actions/core';
 import * as tc from '@actions/tool-cache';
 import * as path from 'path';
-import * as os from 'os';
 import * as fs from 'fs';
+import { spawnSync } from 'child_process';
 import { getPlatformInfo } from './core/platform';
 import { getMatchingAsset } from './core/matcher';
 import { findBinary } from './core/finder';
 import { fetchLatestRelease } from './core/downloader';
+
+function installSystemPackage(downloadPath: string): void {
+  const fileName = path.basename(downloadPath).toLowerCase();
+
+  const command: { binary: string; args: string[] } | undefined = fileName.endsWith('.deb')
+    ? { binary: 'dpkg', args: ['-i', downloadPath] }
+    : fileName.endsWith('.pkg')
+      ? { binary: 'installer', args: ['-pkg', downloadPath, '-target', '/'] }
+      : fileName.endsWith('.rpm')
+        ? { binary: 'rpm', args: ['-i', downloadPath] }
+        : undefined;
+
+  if (!command) {
+    throw new Error(`Unsupported package type: ${fileName}`);
+  }
+
+  const isRoot = process.getuid && process.getuid() === 0;
+  const commandToRun = isRoot ? command.binary : 'sudo';
+  const argsToRun = isRoot ? command.args : [command.binary, ...command.args];
+
+  const result = spawnSync(commandToRun, argsToRun, { stdio: 'inherit' });
+  if (result.status !== 0) {
+    throw new Error(`Failed to install package using ${commandToRun} ${argsToRun.join(' ')}.`);
+  }
+}
+
+function findInstalledBinary(binaryName: string): string | undefined {
+  const isRegex = binaryName.startsWith('~');
+  if (!isRegex) {
+    const whichResult = spawnSync('which', [binaryName], { encoding: 'utf8' });
+    if (whichResult.status === 0) {
+      const resolvedPath = (whichResult.stdout || '').trim();
+      if (resolvedPath) {
+        return resolvedPath;
+      }
+    }
+  }
+
+  const candidates = ['/usr/local/bin', '/usr/bin', '/opt/homebrew/bin', '/opt/local/bin'];
+  const pattern: string | RegExp = isRegex ? new RegExp(binaryName.substring(1), 'i') : binaryName;
+  for (const candidateDir of candidates) {
+    if (!fs.existsSync(candidateDir)) {
+      continue;
+    }
+    const candidatePath = findBinary(candidateDir, pattern, false, () => undefined);
+    if (candidatePath) {
+      return candidatePath;
+    }
+  }
+
+  return undefined;
+}
 
 async function run() {
   try {
     const repository = core.getInput('repository', { required: true });
     const fileNameInput = core.getInput('file-name');
     const binaryInput = core.getInput('binary-name');
-    const fileType = core.getInput('file-type') || 'archive';
+    const fileType = core.getInput('file-type');
     const updateCache = core.getInput('update-cache') || 'false';
     const debug = core.getBooleanInput('debug');
     const token = core.getInput('token') || process.env.GITHUB_TOKEN;
@@ -66,6 +118,21 @@ async function run() {
 
     const nameLower = asset.name.toLowerCase();
     let toolDir: string;
+
+    if (/\.(deb|pkg|rpm)$/i.test(nameLower)) {
+      core.info(`Installing package asset ${asset.name}...`);
+      installSystemPackage(downloadPath);
+
+      const binaryPath = findInstalledBinary(binaryName);
+      if (!binaryPath) {
+        throw new Error(`Package installed, but binary "${binaryName}" could not be located in common executable paths.`);
+      }
+
+      const binaryDir = path.dirname(binaryPath);
+      core.addPath(binaryDir);
+      core.info(`Binary found at ${binaryPath}. Added ${binaryDir} to PATH.`);
+      return;
+    }
 
     // Determine extraction method based on extension
     if (/\.(tar\.gz|tar|tgz)$/i.test(nameLower)) {
