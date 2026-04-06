@@ -9,8 +9,8 @@
   },
   "scripts": {
     "build:action": "esbuild src/index.ts --bundle --platform=node --target=node24 --outfile=dist/index.js",
-    "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node24 --outfile=dist/cli.js --banner:js=\"#!/usr/bin/env node\"",
-    "build:check-token": "esbuild src/check-token.ts --bundle --platform=node --target=node24 --outfile=dist/check-token.js --banner:js=\"#!/usr/bin/env node\"",
+    "build:cli": "esbuild src/cli.ts --bundle --platform=node --target=node24 --outfile=dist/cli.js --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/cli.js",
+    "build:check-token": "esbuild src/check-token.ts --bundle --platform=node --target=node24 --outfile=dist/check-token.js --banner:js=\"#!/usr/bin/env node\" && chmod +x dist/check-token.js",
     "build:check-token-action": "esbuild src/check-token-action.ts --bundle --platform=node --target=node24 --outfile=dist/check-token-action.js",
     "build": "npm run build:action && npm run build:cli && npm run build:check-token && npm run build:check-token-action"
   },
