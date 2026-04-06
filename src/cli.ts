@@ -40,7 +40,8 @@ Options:
   -a, --app-name <name>      Application name (optional, for output messages)
   -f, --file-name <name>     Asset file name or regex pattern (prefixed with ~)
   -b, --binary-name <name>   Binary name (supports source:destination form)
-  -t, --file-type <type>     archive|package|zip|gzip|gz|tar|tar.gz|tgz|deb|pkg|rpm
+  -t, --file-type <type>     Known: archive|package|linux|macos|targz
+                             Or custom: ~<regex> (end-of-string match) or extension (e.g. zip, .tar.gz)
   -p, --install-path <path>  Custom installation directory
   -o, --output-directory <path>
                              Only download selected asset to the specified directory
@@ -118,9 +119,8 @@ function parseCliArgs(argv: string[]): CliOptions {
         break;
       case '-t':
       case '--file-type': {
-        const fileType = ensureOptionValue(argv, i, arg).toLowerCase();
-        const knownType = /^(archive|package|zip|gzip|gz|tar|tar\.gz|tgz|deb|pkg|rpm)$/i;
-        if (!knownType.test(fileType)) {
+        const fileType = ensureOptionValue(argv, i, arg);
+        if (!fileType.trim()) {
           throw new Error(`Unknown asset type: ${fileType}`);
         }
         opts.fileType = fileType;

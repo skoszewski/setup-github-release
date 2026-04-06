@@ -1,116 +1,76 @@
 import { PlatformInfo } from './platform';
+import { minimatch } from 'minimatch';
 
-function normalizeCustomExtensionPattern(fileType: string): string {
-  let pattern = fileType;
+type ReleaseAsset = { name: string; browser_download_url: string };
 
-  if (!pattern.endsWith('$')) {
-    pattern += '$';
-  }
+const knownFileTypes: Record<string, string> = {
+  archive: '*.{zip,tar.gz,tgz}',
+  package: '*.{deb,pkg,rpm}',
+  linux: '*.{deb,rpm}',
+  macos: '*.pkg',
+  targz: '*.{tgz,tar.gz}',
+};
 
-  if (!pattern.startsWith('\\.')) {
-    pattern = `\\.${pattern}`;
-  }
-
-  return pattern;
-}
-
-function getExtPattern(fileType: string | undefined, system: string): string {
-  const normalizedType = (fileType || '').toLowerCase();
-
-  if (!normalizedType) {
-    if (system === 'linux') {
-      return '\\.(deb|rpm|zip|tar\\.gz|tgz)$';
-    }
-    if (system === 'darwin' || system === 'macos' || system === 'mac' || system === 'osx') {
-      return '\\.(pkg|zip|tar\\.gz|tgz)$';
-    }
-    return '\\.(zip|tar\\.gz|tgz)$';
-  }
-
-  if (normalizedType === 'archive') {
-    return '\\.(zip|tar\\.gz|tgz)$';
-  }
-
-  if (normalizedType === 'package') {
-    return '\\.(deb|pkg|rpm)$';
-  }
-
-  const shorthandTypePatterns: Record<string, string> = {
-    zip: '\\.(zip)$',
-    gzip: '\\.(tar\\.gz|tgz)$',
-    gz: '\\.(tar\\.gz|tgz)$',
-    tar: '\\.(tar)$',
-    'tar.gz': '\\.(tar\\.gz)$',
-    tgz: '\\.(tgz)$',
-    deb: '\\.(deb)$',
-    pkg: '\\.(pkg)$',
-    rpm: '\\.(rpm)$'
-  };
-
-  if (shorthandTypePatterns[normalizedType]) {
-    return shorthandTypePatterns[normalizedType];
-  }
-
-  return normalizeCustomExtensionPattern(fileType || '');
-}
-
-function matchFilenameString(re: string, pi: PlatformInfo, extRe: string): string {
-  const hasSystem = re.includes('{{SYSTEM}}');
-  const hasArch = re.includes('{{ARCH}}');
-  const hasExt = re.includes('{{EXT_PATTERN}}');
-  const hasEnd = re.endsWith('$');
-
-  const finalRe = (!hasSystem && !hasArch && !hasExt && !hasEnd)
-    ? `${re}.*{{SYSTEM}}[_-]{{ARCH}}.*{{EXT_PATTERN}}$`
-    : (hasSystem && hasArch && !hasExt && !hasEnd)
-      ? `${re}.*{{EXT_PATTERN}}$`
-      : re;
-
-  return finalRe
-    .replace(/{{SYSTEM}}/g, pi.systemPattern)
-    .replace(/{{ARCH}}/g, pi.archPattern)
-    .replace(/{{EXT_PATTERN}}/g, extRe);
-}
-
-function matchSingleAssetByRegex(assets: any[], pattern: string, noMatchError: string, multipleMatchErrorPrefix: string): any {
+function filterByRegex(assets: ReleaseAsset[], pattern: string): ReleaseAsset[] {
   const regex = new RegExp(pattern, 'i');
-  const matchingAssets = assets.filter((a: any) => regex.test(a.name));
-  if (matchingAssets.length === 0) {
-    throw new Error(noMatchError);
-  }
-  if (matchingAssets.length > 1) {
-    throw new Error(`${multipleMatchErrorPrefix}: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
-  }
-  return matchingAssets[0];
+  return assets.filter((asset) => regex.test(asset.name));
 }
 
-export function getMatchingAsset(assets: any[], platform: PlatformInfo, fileName?: string, fileType?: string): any {
-  const extPattern = getExtPattern(fileType, platform.system);
+function replacePlatformPlaceholders(pattern: string, platform: PlatformInfo): string {
+  return pattern
+    .replace(/{{SYSTEM}}/g, platform.systemPattern)
+    .replace(/{{ARCH}}/g, platform.archPattern);
+}
 
-  if (!fileName || fileName.startsWith('~')) {
-    // Rule 1 + Rule 3: Regex-based matching rules
-    const pattern = !fileName
-      ? `${platform.systemPattern}[_-]${platform.archPattern}.*${extPattern}`
-      : matchFilenameString(fileName.substring(1), platform, extPattern);
-    const noMatchError = !fileName
-      ? `No assets matched the default criteria: ${pattern}`
-      : `No assets matched the regex: ${pattern}`;
-    const multipleMatchErrorPrefix = !fileName
-      ? 'Multiple assets matched the default criteria'
-      : 'Multiple assets matched the criteria';
-
-    return matchSingleAssetByRegex(
-      assets,
-      pattern,
-      noMatchError,
-      multipleMatchErrorPrefix
-    );
-  } else {
-    // Rule 2: Literal matching rule
-    const asset = assets.find((a: any) => a.name === fileName);
-    if (!asset) {
-      throw new Error(`No asset found matching the exact name: ${fileName}`);
+export function getMatchingAsset(assets: ReleaseAsset[], platform: PlatformInfo, fileName?: string, fileType?: string): ReleaseAsset {
+  // Filename provided as literal string (no ~): exact match.
+  if (fileName && !fileName.startsWith('~')) {
+    const exactMatches = assets.filter((asset) => asset.name === fileName);
+    if (exactMatches.length !== 1) {
+      throw new Error(`Expected exactly one asset to match the provided filename, matched: ${exactMatches.length}`);
     }
-    return asset;
+    return exactMatches[0];
   }
+
+  // Filetype filtering stage (or passthrough when not provided).
+  let fileTypeFilteredAssets: ReleaseAsset[] = assets;
+  if (fileType) {
+    if (Object.hasOwn(knownFileTypes, fileType)) {
+      // 2. Known fileType key: use predefined glob.
+      const fileTypeGlob = knownFileTypes[fileType];
+      fileTypeFilteredAssets = assets.filter((asset) => minimatch(asset.name, fileTypeGlob, { nocase: true }));
+    } else if (fileType.startsWith('~')) {
+      // 3. Custom regex fileType: match regex at end of string.
+      const fileTypeRegex = `${fileType.substring(1)}$`;
+      fileTypeFilteredAssets = filterByRegex(assets, fileTypeRegex);
+    } else {
+      // 4. Custom extension fileType: treat as plain extension glob.
+      const extension = fileType.replace(/^\./, '');
+      const fileTypeGlob = `*.${extension}`;
+      fileTypeFilteredAssets = assets.filter((asset) => minimatch(asset.name, fileTypeGlob, { nocase: true }));
+    }
+  }
+
+  // 4. Filename provided with ~: platform placeholder expansion and regex filtering.
+  if (fileName && fileName.startsWith('~')) {
+    const fileNamePattern = replacePlatformPlaceholders(fileName.substring(1), platform);
+    const fileNameFilteredAssets = filterByRegex(fileTypeFilteredAssets, fileNamePattern);
+    if (fileNameFilteredAssets.length !== 1) {
+      throw new Error(`Expected exactly one asset to match the filename regex, matched: ${fileNameFilteredAssets.length}`);
+    }
+    return fileNameFilteredAssets[0];
+  }
+
+  // 5. No filename: use default {{SYSTEM}}-{{ARCH}} regex.
+  const defaultPattern = replacePlatformPlaceholders('{{SYSTEM}}[_-]{{ARCH}}', platform);
+  const defaultFilteredAssets = filterByRegex(fileTypeFilteredAssets, defaultPattern);
+
+  // 6. Zero or multiple matches are errors.
+  if (defaultFilteredAssets.length !== 1) {
+    const errorMessage = defaultFilteredAssets.length === 0
+      ? `No assets matched the default criteria: ${defaultPattern}`
+      : `Multiple assets matched the default criteria: ${defaultFilteredAssets.map((asset) => asset.name).join(', ')}`;
+    throw new Error(errorMessage);
+  }
+  return defaultFilteredAssets[0];
 }
