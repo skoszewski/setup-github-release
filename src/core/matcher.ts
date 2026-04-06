@@ -77,34 +77,40 @@ function matchFilenameString(re: string, pi: PlatformInfo, extRe: string): strin
     .replace(/{{EXT_PATTERN}}/g, extRe);
 }
 
+function matchSingleAssetByRegex(assets: any[], pattern: string, noMatchError: string, multipleMatchErrorPrefix: string): any {
+  const regex = new RegExp(pattern, 'i');
+  const matchingAssets = assets.filter((a: any) => regex.test(a.name));
+  if (matchingAssets.length === 0) {
+    throw new Error(noMatchError);
+  }
+  if (matchingAssets.length > 1) {
+    throw new Error(`${multipleMatchErrorPrefix}: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
+  }
+  return matchingAssets[0];
+}
+
 export function getMatchingAsset(assets: any[], platform: PlatformInfo, options: MatchOptions): any {
   const { fileName, fileType } = options;
   const extPattern = getExtPattern(fileType, platform.system);
 
-  if (!fileName) {
-    // Rule 1: Default matching rule
-    const pattern = `${platform.systemPattern}[_-]${platform.archPattern}.*${extPattern}`;
-    const regex = new RegExp(pattern, 'i');
-    const matchingAssets = assets.filter((a: any) => regex.test(a.name));
-    if (matchingAssets.length === 0) {
-      throw new Error(`No assets matched the default criteria: ${pattern}`);
-    }
-    if (matchingAssets.length > 1) {
-      throw new Error(`Multiple assets matched the default criteria: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
-    }
-    return matchingAssets[0];
-  } else if (fileName.startsWith('~')) {
-    // Rule 3: Regex matching rule
-    const pattern = matchFilenameString(fileName.substring(1), platform, extPattern);
-    const regex = new RegExp(pattern, 'i');
-    const matchingAssets = assets.filter((a: any) => regex.test(a.name));
-    if (matchingAssets.length === 0) {
-      throw new Error(`No assets matched the regex: ${pattern}`);
-    }
-    if (matchingAssets.length > 1) {
-      throw new Error(`Multiple assets matched the criteria: ${matchingAssets.map((a: any) => a.name).join(', ')}`);
-    }
-    return matchingAssets[0];
+  if (!fileName || fileName.startsWith('~')) {
+    // Rule 1 + Rule 3: Regex-based matching rules
+    const pattern = !fileName
+      ? `${platform.systemPattern}[_-]${platform.archPattern}.*${extPattern}`
+      : matchFilenameString(fileName.substring(1), platform, extPattern);
+    const noMatchError = !fileName
+      ? `No assets matched the default criteria: ${pattern}`
+      : `No assets matched the regex: ${pattern}`;
+    const multipleMatchErrorPrefix = !fileName
+      ? 'Multiple assets matched the default criteria'
+      : 'Multiple assets matched the criteria';
+
+    return matchSingleAssetByRegex(
+      assets,
+      pattern,
+      noMatchError,
+      multipleMatchErrorPrefix
+    );
   } else {
     // Rule 2: Literal matching rule
     const asset = assets.find((a: any) => a.name === fileName);
