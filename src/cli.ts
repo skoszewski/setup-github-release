@@ -216,9 +216,15 @@ async function run() {
 
   let binaryPattern: string | RegExp;
   if (binarySource.startsWith('~')) {
-    binaryPattern = new RegExp(binarySource.substring(1), 'i');
+    const binaryRegex = binarySource
+      .substring(1)
+      .replace(/{{SYSTEM}}/g, platformInfo.systemPattern)
+      .replace(/{{ARCH}}/g, platformInfo.archPattern);
+    binaryPattern = new RegExp(binaryRegex, 'i');
   } else {
-    binaryPattern = binarySource;
+    binaryPattern = binarySource
+      .replace(/{{SYSTEM}}/g, platformInfo.system)
+      .replace(/{{ARCH}}/g, platformInfo.arch);
   }
 
   const binaryPath = findBinary(extractDir, binaryPattern, options.debug, console.log);
