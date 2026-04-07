@@ -10,12 +10,9 @@ import { fetchLatestRelease } from './core/downloader';
 import { installSystemPackage } from './core/installer';
 
 function findInstalledBinary(binaryName: string): string | undefined {
-  let pattern: RegExp;
 
   if (!binaryName.startsWith('~')) {
-    pattern = new RegExp(`^${binaryName}$`, 'i');
-  } else {
-    pattern = new RegExp(binaryName.substring(1), 'i');
+    binaryName = `~^${binaryName}$`;
   }
 
   const dirs = [
@@ -33,7 +30,7 @@ function findInstalledBinary(binaryName: string): string | undefined {
     if (!fs.existsSync(d)) {
       continue;
     }
-    const p = findBinary(d, pattern, false, () => undefined);
+    const p = findBinary(d, binaryName, false, () => undefined);
     if (p) {
       return p;
     }
@@ -138,16 +135,13 @@ async function run() {
     }
 
     // Find the binary within the extracted/prepared directory
-    let binaryPattern: string | RegExp;
     if (binaryName.startsWith('~')) {
-      binaryPattern = new RegExp(binaryName.substring(1), 'i');
       core.info(`Searching for binary matching regex: ${binaryName.substring(1)}`);
     } else {
-      binaryPattern = binaryName;
       core.info(`Searching for binary named: ${binaryName}`);
     }
 
-    const binaryPath = findBinary(toolDir, binaryPattern, debug, (msg) => core.info(msg));
+    const binaryPath = findBinary(toolDir, binaryName, debug, (msg) => core.info(msg));
     if (!binaryPath) {
       throw new Error(`Could not find binary "${binaryName}" in the extracted asset.`);
     }

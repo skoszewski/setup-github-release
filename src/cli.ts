@@ -189,13 +189,13 @@ async function run() {
   console.log(`Extracting ${asset.name}...`);
   await extractAsset(downloadPath, extractDir);
 
-  let binaryPattern: string | RegExp;
+  let binaryPattern: string;
   if (binarySource.startsWith('~')) {
     const binaryRegex = binarySource
       .substring(1)
       .replace(/{{SYSTEM}}/g, platformInfo.systemPattern)
       .replace(/{{ARCH}}/g, platformInfo.archPattern);
-    binaryPattern = new RegExp(binaryRegex, 'i');
+    binaryPattern = `~${binaryRegex}`;
   } else {
     binaryPattern = binarySource
       .replace(/{{SYSTEM}}/g, platformInfo.system)

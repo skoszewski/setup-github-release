@@ -1064,14 +1064,14 @@ var require_util = __commonJS({
         }
         const port = url.port != null ? url.port : url.protocol === "https:" ? 443 : 80;
         let origin = url.origin != null ? url.origin : `${url.protocol || ""}//${url.hostname || ""}:${port}`;
-        let path9 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
+        let path10 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
         if (origin[origin.length - 1] === "/") {
           origin = origin.slice(0, origin.length - 1);
         }
-        if (path9 && path9[0] !== "/") {
-          path9 = `/${path9}`;
+        if (path10 && path10[0] !== "/") {
+          path10 = `/${path10}`;
         }
-        return new URL(`${origin}${path9}`);
+        return new URL(`${origin}${path10}`);
       }
       if (!isHttpOrHttpsPrefixed(url.origin || url.protocol)) {
         throw new InvalidArgumentError("Invalid URL protocol: the URL must start with `http:` or `https:`.");
@@ -1522,39 +1522,39 @@ var require_diagnostics = __commonJS({
       });
       diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
         const {
-          request: { method, path: path9, origin }
+          request: { method, path: path10, origin }
         } = evt;
-        debuglog("sending request to %s %s/%s", method, origin, path9);
+        debuglog("sending request to %s %s/%s", method, origin, path10);
       });
       diagnosticsChannel.channel("undici:request:headers").subscribe((evt) => {
         const {
-          request: { method, path: path9, origin },
+          request: { method, path: path10, origin },
           response: { statusCode }
         } = evt;
         debuglog(
           "received response to %s %s/%s - HTTP %d",
           method,
           origin,
-          path9,
+          path10,
           statusCode
         );
       });
       diagnosticsChannel.channel("undici:request:trailers").subscribe((evt) => {
         const {
-          request: { method, path: path9, origin }
+          request: { method, path: path10, origin }
         } = evt;
-        debuglog("trailers received from %s %s/%s", method, origin, path9);
+        debuglog("trailers received from %s %s/%s", method, origin, path10);
       });
       diagnosticsChannel.channel("undici:request:error").subscribe((evt) => {
         const {
-          request: { method, path: path9, origin },
+          request: { method, path: path10, origin },
           error: error2
         } = evt;
         debuglog(
           "request to %s %s/%s errored - %s",
           method,
           origin,
-          path9,
+          path10,
           error2.message
         );
       });
@@ -1603,9 +1603,9 @@ var require_diagnostics = __commonJS({
         });
         diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
           const {
-            request: { method, path: path9, origin }
+            request: { method, path: path10, origin }
           } = evt;
-          debuglog("sending request to %s %s/%s", method, origin, path9);
+          debuglog("sending request to %s %s/%s", method, origin, path10);
         });
       }
       diagnosticsChannel.channel("undici:websocket:open").subscribe((evt) => {
@@ -1668,7 +1668,7 @@ var require_request = __commonJS({
     var kHandler = /* @__PURE__ */ Symbol("handler");
     var Request = class {
       constructor(origin, {
-        path: path9,
+        path: path10,
         method,
         body,
         headers,
@@ -1683,11 +1683,11 @@ var require_request = __commonJS({
         expectContinue,
         servername
       }, handler) {
-        if (typeof path9 !== "string") {
+        if (typeof path10 !== "string") {
           throw new InvalidArgumentError("path must be a string");
-        } else if (path9[0] !== "/" && !(path9.startsWith("http://") || path9.startsWith("https://")) && method !== "CONNECT") {
+        } else if (path10[0] !== "/" && !(path10.startsWith("http://") || path10.startsWith("https://")) && method !== "CONNECT") {
           throw new InvalidArgumentError("path must be an absolute URL or start with a slash");
-        } else if (invalidPathRegex.test(path9)) {
+        } else if (invalidPathRegex.test(path10)) {
           throw new InvalidArgumentError("invalid request path");
         }
         if (typeof method !== "string") {
@@ -1753,7 +1753,7 @@ var require_request = __commonJS({
         this.completed = false;
         this.aborted = false;
         this.upgrade = upgrade || null;
-        this.path = query ? buildURL(path9, query) : path9;
+        this.path = query ? buildURL(path10, query) : path10;
         this.origin = origin;
         this.idempotent = idempotent == null ? method === "HEAD" || method === "GET" : idempotent;
         this.blocking = blocking == null ? false : blocking;
@@ -6272,7 +6272,7 @@ var require_client_h1 = __commonJS({
       return method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && method !== "TRACE" && method !== "CONNECT";
     }
     function writeH1(client, request) {
-      const { method, path: path9, host, upgrade, blocking, reset } = request;
+      const { method, path: path10, host, upgrade, blocking, reset } = request;
       let { body, headers, contentLength } = request;
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH" || method === "QUERY" || method === "PROPFIND" || method === "PROPPATCH";
       if (util2.isFormDataLike(body)) {
@@ -6338,7 +6338,7 @@ var require_client_h1 = __commonJS({
       if (blocking) {
         socket[kBlocking] = true;
       }
-      let header = `${method} ${path9} HTTP/1.1\r
+      let header = `${method} ${path10} HTTP/1.1\r
 `;
       if (typeof host === "string") {
         header += `host: ${host}\r
@@ -6864,7 +6864,7 @@ var require_client_h2 = __commonJS({
     }
     function writeH2(client, request) {
       const session = client[kHTTP2Session];
-      const { method, path: path9, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
+      const { method, path: path10, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
       let { body } = request;
       if (upgrade) {
         util2.errorRequest(client, request, new Error("Upgrade not supported for H2"));
@@ -6931,7 +6931,7 @@ var require_client_h2 = __commonJS({
         });
         return true;
       }
-      headers[HTTP2_HEADER_PATH] = path9;
+      headers[HTTP2_HEADER_PATH] = path10;
       headers[HTTP2_HEADER_SCHEME] = "https";
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
       if (body && typeof body.read === "function") {
@@ -7284,9 +7284,9 @@ var require_redirect_handler = __commonJS({
           return this.handler.onHeaders(statusCode, headers, resume, statusText);
         }
         const { origin, pathname, search } = util2.parseURL(new URL(this.location, this.opts.origin && new URL(this.opts.path, this.opts.origin)));
-        const path9 = search ? `${pathname}${search}` : pathname;
+        const path10 = search ? `${pathname}${search}` : pathname;
         this.opts.headers = cleanRequestHeaders(this.opts.headers, statusCode === 303, this.opts.origin !== origin);
-        this.opts.path = path9;
+        this.opts.path = path10;
         this.opts.origin = origin;
         this.opts.maxRedirections = 0;
         this.opts.query = null;
@@ -8520,10 +8520,10 @@ var require_proxy_agent = __commonJS({
         };
         const {
           origin,
-          path: path9 = "/",
+          path: path10 = "/",
           headers = {}
         } = opts;
-        opts.path = origin + path9;
+        opts.path = origin + path10;
         if (!("host" in headers) && !("Host" in headers)) {
           const { host } = new URL2(origin);
           headers.host = host;
@@ -10444,20 +10444,20 @@ var require_mock_utils = __commonJS({
       }
       return true;
     }
-    function safeUrl(path9) {
-      if (typeof path9 !== "string") {
-        return path9;
+    function safeUrl(path10) {
+      if (typeof path10 !== "string") {
+        return path10;
       }
-      const pathSegments = path9.split("?");
+      const pathSegments = path10.split("?");
       if (pathSegments.length !== 2) {
-        return path9;
+        return path10;
       }
       const qp = new URLSearchParams(pathSegments.pop());
       qp.sort();
       return [...pathSegments, qp.toString()].join("?");
     }
-    function matchKey(mockDispatch2, { path: path9, method, body, headers }) {
-      const pathMatch = matchValue(mockDispatch2.path, path9);
+    function matchKey(mockDispatch2, { path: path10, method, body, headers }) {
+      const pathMatch = matchValue(mockDispatch2.path, path10);
       const methodMatch = matchValue(mockDispatch2.method, method);
       const bodyMatch = typeof mockDispatch2.body !== "undefined" ? matchValue(mockDispatch2.body, body) : true;
       const headersMatch = matchHeaders(mockDispatch2, headers);
@@ -10479,7 +10479,7 @@ var require_mock_utils = __commonJS({
     function getMockDispatch(mockDispatches, key) {
       const basePath = key.query ? buildURL(key.path, key.query) : key.path;
       const resolvedPath = typeof basePath === "string" ? safeUrl(basePath) : basePath;
-      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path9 }) => matchValue(safeUrl(path9), resolvedPath));
+      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path10 }) => matchValue(safeUrl(path10), resolvedPath));
       if (matchedMockDispatches.length === 0) {
         throw new MockNotMatchedError(`Mock dispatch not matched for path '${resolvedPath}'`);
       }
@@ -10517,9 +10517,9 @@ var require_mock_utils = __commonJS({
       }
     }
     function buildKey(opts) {
-      const { path: path9, method, body, headers, query } = opts;
+      const { path: path10, method, body, headers, query } = opts;
       return {
-        path: path9,
+        path: path10,
         method,
         body,
         headers,
@@ -10982,10 +10982,10 @@ var require_pending_interceptors_formatter = __commonJS({
       }
       format(pendingInterceptors) {
         const withPrettyHeaders = pendingInterceptors.map(
-          ({ method, path: path9, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
+          ({ method, path: path10, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
             Method: method,
             Origin: origin,
-            Path: path9,
+            Path: path10,
             "Status code": statusCode,
             Persistent: persist ? PERSISTENT : NOT_PERSISTENT,
             Invocations: timesInvoked,
@@ -15866,9 +15866,9 @@ var require_util6 = __commonJS({
         }
       }
     }
-    function validateCookiePath(path9) {
-      for (let i = 0; i < path9.length; ++i) {
-        const code = path9.charCodeAt(i);
+    function validateCookiePath(path10) {
+      for (let i = 0; i < path10.length; ++i) {
+        const code = path10.charCodeAt(i);
         if (code < 32 || // exclude CTLs (0-31)
         code === 127 || // DEL
         code === 59) {
@@ -18508,11 +18508,11 @@ var require_undici = __commonJS({
           if (typeof opts.path !== "string") {
             throw new InvalidArgumentError("invalid opts.path");
           }
-          let path9 = opts.path;
+          let path10 = opts.path;
           if (!opts.path.startsWith("/")) {
-            path9 = `/${path9}`;
+            path10 = `/${path10}`;
           }
-          url = new URL(util2.parseOrigin(url).origin + path9);
+          url = new URL(util2.parseOrigin(url).origin + path10);
         } else {
           if (!opts) {
             opts = typeof url === "object" ? url : {};
@@ -22992,9 +22992,8 @@ function _unique(values) {
 }
 
 // src/index.ts
-var path8 = __toESM(require("path"));
+var path9 = __toESM(require("path"));
 var fs5 = __toESM(require("fs"));
-var import_child_process = require("child_process");
 
 // src/core/platform.ts
 var os7 = __toESM(require("os"));
@@ -24890,6 +24889,7 @@ function getMatchingAsset(assets, platform3, fileName, fileType, dryRun) {
 var fs4 = __toESM(require("fs"));
 var path7 = __toESM(require("path"));
 function findBinary(dir, pattern, debug2, logger) {
+  const regex = pattern.startsWith("~") ? new RegExp(pattern.substring(1), "i") : void 0;
   const items = fs4.readdirSync(dir);
   if (debug2) {
     logger(`Searching for binary in ${dir}...`);
@@ -24903,8 +24903,8 @@ function findBinary(dir, pattern, debug2, logger) {
       if (found) return found;
     } else {
       let isMatch = false;
-      if (pattern instanceof RegExp) {
-        isMatch = pattern.test(item);
+      if (regex) {
+        isMatch = regex.test(item);
       } else {
         isMatch = item === pattern;
         if (!isMatch && process.platform === "win32" && !pattern.toLowerCase().endsWith(".exe")) {
@@ -24939,7 +24939,9 @@ async function fetchLatestRelease(repository, token) {
   return await response.json();
 }
 
-// src/index.ts
+// src/core/installer.ts
+var path8 = __toESM(require("path"));
+var import_child_process = require("child_process");
 function installSystemPackage(downloadPath) {
   const fileName = path8.basename(downloadPath).toLowerCase();
   const command = fileName.endsWith(".deb") ? { binary: "dpkg", args: ["-i", downloadPath] } : fileName.endsWith(".pkg") ? { binary: "installer", args: ["-pkg", downloadPath, "-target", "/"] } : fileName.endsWith(".rpm") ? { binary: "rpm", args: ["-i", downloadPath] } : void 0;
@@ -24954,26 +24956,29 @@ function installSystemPackage(downloadPath) {
     throw new Error(`Failed to install package using ${commandToRun} ${argsToRun.join(" ")}.`);
   }
 }
+
+// src/index.ts
 function findInstalledBinary(binaryName) {
-  const isRegex = binaryName.startsWith("~");
-  if (!isRegex) {
-    const whichResult = (0, import_child_process.spawnSync)("which", [binaryName], { encoding: "utf8" });
-    if (whichResult.status === 0) {
-      const resolvedPath = (whichResult.stdout || "").trim();
-      if (resolvedPath) {
-        return resolvedPath;
-      }
-    }
+  if (!binaryName.startsWith("~")) {
+    binaryName = `~^${binaryName}$`;
   }
-  const candidates = ["/usr/local/bin", "/usr/bin", "/opt/homebrew/bin", "/opt/local/bin"];
-  const pattern = isRegex ? new RegExp(binaryName.substring(1), "i") : binaryName;
-  for (const candidateDir of candidates) {
-    if (!fs5.existsSync(candidateDir)) {
+  const dirs = [
+    "/usr/local/bin",
+    "/usr/local/sbin",
+    "/usr/bin",
+    "/usr/sbin",
+    "/bin",
+    "/sbin",
+    path9.join(process.env.HOME || "/", "bin"),
+    "/opt/homebrew/bin"
+  ];
+  for (const d of dirs) {
+    if (!fs5.existsSync(d)) {
       continue;
     }
-    const candidatePath = findBinary(candidateDir, pattern, false, () => void 0);
-    if (candidatePath) {
-      return candidatePath;
+    const p = findBinary(d, binaryName, false, () => void 0);
+    if (p) {
+      return p;
     }
   }
   return void 0;
@@ -25029,7 +25034,7 @@ async function run() {
       if (!binaryPath2) {
         throw new Error(`Package installed, but binary "${binaryName}" could not be located in common executable paths.`);
       }
-      const binaryDir = path8.dirname(binaryPath2);
+      const binaryDir = path9.dirname(binaryPath2);
       addPath(binaryDir);
       info(`Binary found at ${binaryPath2}. Added ${binaryDir} to PATH.`);
       return;
@@ -25043,8 +25048,8 @@ async function run() {
     } else if (/\.(xar|pkg)$/i.test(nameLower)) {
       toolDir = await extractXar(downloadPath);
     } else {
-      toolDir = path8.join(path8.dirname(downloadPath), "bin");
-      const destPath = path8.join(toolDir, asset.name);
+      toolDir = path9.join(path9.dirname(downloadPath), "bin");
+      const destPath = path9.join(toolDir, asset.name);
       if (!fs5.existsSync(toolDir)) {
         fs5.mkdirSync(toolDir, { recursive: true });
       }
@@ -25053,19 +25058,16 @@ async function run() {
         fs5.chmodSync(destPath, "755");
       }
     }
-    let binaryPattern;
     if (binaryName.startsWith("~")) {
-      binaryPattern = new RegExp(binaryName.substring(1), "i");
       info(`Searching for binary matching regex: ${binaryName.substring(1)}`);
     } else {
-      binaryPattern = binaryName;
       info(`Searching for binary named: ${binaryName}`);
     }
-    const binaryPath = findBinary(toolDir, binaryPattern, debug2, (msg) => info(msg));
+    const binaryPath = findBinary(toolDir, binaryName, debug2, (msg) => info(msg));
     if (!binaryPath) {
       throw new Error(`Could not find binary "${binaryName}" in the extracted asset.`);
     }
-    toolDir = path8.dirname(binaryPath);
+    toolDir = path9.dirname(binaryPath);
     info(`Binary found at ${binaryPath}.`);
     if (process.platform !== "win32") {
       fs5.chmodSync(binaryPath, "755");

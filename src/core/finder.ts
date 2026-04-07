@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export function findBinary(dir: string, pattern: string | RegExp, debug: boolean, logger: (msg: string) => void): string | undefined {
+export function findBinary(dir: string, pattern: string, debug: boolean, logger: (msg: string) => void): string | undefined {
+  const regex = pattern.startsWith('~') ? new RegExp(pattern.substring(1), 'i') : undefined;
   const items = fs.readdirSync(dir);
   if (debug) {
     logger(`Searching for binary in ${dir}...`);
@@ -16,8 +17,8 @@ export function findBinary(dir: string, pattern: string | RegExp, debug: boolean
       if (found) return found;
     } else {
       let isMatch = false;
-      if (pattern instanceof RegExp) {
-        isMatch = pattern.test(item);
+      if (regex) {
+        isMatch = regex.test(item);
       } else {
         isMatch = item === pattern;
         // On Windows, also check for .exe extension if the pattern doesn't have it
