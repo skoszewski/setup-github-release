@@ -21768,8 +21768,8 @@ var systemPatterns = {
   win32: "(windows|win)"
 };
 var archPatterns = {
-  x64: "(x86_64|x64|amd64)",
-  arm64: "(aarch64|arm64)"
+  x64: "(x86_64|x64|amd64|universal)",
+  arm64: "(aarch64|arm64|universal)"
 };
 function getPlatformInfo(overrides) {
   const system = (overrides?.system || os.platform()).toLowerCase();
@@ -23592,14 +23592,26 @@ var knownFileTypes = {
   macos: "*.pkg",
   targz: "*.{tgz,tar.gz}"
 };
-function filterByRegex(assets, pattern) {
+function debugAssetList(label, assets) {
+  console.debug(label);
+  for (const asset of assets) {
+    console.debug(`- ${asset.name}`);
+  }
+}
+function filterByRegex(assets, pattern, dryRun) {
   const regex = new RegExp(pattern, "i");
-  return assets.filter((asset) => regex.test(asset.name));
+  const filtered = assets.filter((asset) => regex.test(asset.name));
+  if (dryRun) {
+    console.debug(`Filtering assets with regex: ${pattern}`);
+    debugAssetList("Assets:", assets);
+    debugAssetList("Matched assets:", filtered);
+  }
+  return filtered;
 }
 function replacePlatformPlaceholders(pattern, platform2) {
   return pattern.replace(/{{SYSTEM}}/g, platform2.systemPattern).replace(/{{ARCH}}/g, platform2.archPattern);
 }
-function getMatchingAsset(assets, platform2, fileName, fileType) {
+function getMatchingAsset(assets, platform2, fileName, fileType, dryRun) {
   if (fileName && !fileName.startsWith("~")) {
     const exactMatches = assets.filter((asset) => asset.name === fileName);
     if (exactMatches.length !== 1) {
@@ -23614,7 +23626,7 @@ function getMatchingAsset(assets, platform2, fileName, fileType) {
       fileTypeFilteredAssets = assets.filter((asset) => minimatch(asset.name, fileTypeGlob, { nocase: true }));
     } else if (fileType.startsWith("~")) {
       const fileTypeRegex = `${fileType.substring(1)}$`;
-      fileTypeFilteredAssets = filterByRegex(assets, fileTypeRegex);
+      fileTypeFilteredAssets = filterByRegex(assets, fileTypeRegex, dryRun);
     } else {
       const extension = fileType.replace(/^\./, "");
       const fileTypeGlob = `*.${extension}`;
@@ -23623,14 +23635,14 @@ function getMatchingAsset(assets, platform2, fileName, fileType) {
   }
   if (fileName && fileName.startsWith("~")) {
     const fileNamePattern = replacePlatformPlaceholders(fileName.substring(1), platform2);
-    const fileNameFilteredAssets = filterByRegex(fileTypeFilteredAssets, fileNamePattern);
+    const fileNameFilteredAssets = filterByRegex(fileTypeFilteredAssets, fileNamePattern, dryRun);
     if (fileNameFilteredAssets.length !== 1) {
       throw new Error(`Expected exactly one asset to match the filename regex, matched: ${fileNameFilteredAssets.length}`);
     }
     return fileNameFilteredAssets[0];
   }
   const defaultPattern = replacePlatformPlaceholders("{{SYSTEM}}[_-]{{ARCH}}", platform2);
-  const defaultFilteredAssets = filterByRegex(fileTypeFilteredAssets, defaultPattern);
+  const defaultFilteredAssets = filterByRegex(fileTypeFilteredAssets, defaultPattern, dryRun);
   if (defaultFilteredAssets.length !== 1) {
     const errorMessage = defaultFilteredAssets.length === 0 ? `No assets matched the default criteria: ${defaultPattern}` : `Multiple assets matched the default criteria: ${defaultFilteredAssets.map((asset) => asset.name).join(", ")}`;
     throw new Error(errorMessage);

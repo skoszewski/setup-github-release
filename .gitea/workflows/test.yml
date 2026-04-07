@@ -35,6 +35,7 @@ jobs:
         with:
           repository: 'gohugoio/hugo'
           file-name: '~hugo_extended_[^a-z]'
+          file-type: 'archive'
           token: ${{ secrets.GH_TOKEN }}
           update-cache: 'always'
 
