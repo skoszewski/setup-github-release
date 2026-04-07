@@ -43,6 +43,7 @@ jobs:
         uses: ./
         with:
           repository: 'rclone/rclone'
+          file-type: 'archive'
           token: ${{ secrets.GH_TOKEN }}
           update-cache: 'always'
 
