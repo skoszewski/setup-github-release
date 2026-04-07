@@ -7,53 +7,35 @@ import { getPlatformInfo } from './core/platform';
 import { getMatchingAsset } from './core/matcher';
 import { findBinary } from './core/finder';
 import { fetchLatestRelease } from './core/downloader';
-
-function installSystemPackage(downloadPath: string): void {
-  const fileName = path.basename(downloadPath).toLowerCase();
-
-  const command: { binary: string; args: string[] } | undefined = fileName.endsWith('.deb')
-    ? { binary: 'dpkg', args: ['-i', downloadPath] }
-    : fileName.endsWith('.pkg')
-      ? { binary: 'installer', args: ['-pkg', downloadPath, '-target', '/'] }
-      : fileName.endsWith('.rpm')
-        ? { binary: 'rpm', args: ['-i', downloadPath] }
-        : undefined;
-
-  if (!command) {
-    throw new Error(`Unsupported package type: ${fileName}`);
-  }
-
-  const isRoot = process.getuid && process.getuid() === 0;
-  const commandToRun = isRoot ? command.binary : 'sudo';
-  const argsToRun = isRoot ? command.args : [command.binary, ...command.args];
-
-  const result = spawnSync(commandToRun, argsToRun, { stdio: 'inherit' });
-  if (result.status !== 0) {
-    throw new Error(`Failed to install package using ${commandToRun} ${argsToRun.join(' ')}.`);
-  }
-}
+import { installSystemPackage } from './core/installer';
 
 function findInstalledBinary(binaryName: string): string | undefined {
-  const isRegex = binaryName.startsWith('~');
-  if (!isRegex) {
-    const whichResult = spawnSync('which', [binaryName], { encoding: 'utf8' });
-    if (whichResult.status === 0) {
-      const resolvedPath = (whichResult.stdout || '').trim();
-      if (resolvedPath) {
-        return resolvedPath;
-      }
-    }
+  let pattern: RegExp;
+
+  if (!binaryName.startsWith('~')) {
+    pattern = new RegExp(`^${binaryName}$`, 'i');
+  } else {
+    pattern = new RegExp(binaryName.substring(1), 'i');
   }
 
-  const candidates = ['/usr/local/bin', '/usr/bin', '/opt/homebrew/bin', '/opt/local/bin'];
-  const pattern: string | RegExp = isRegex ? new RegExp(binaryName.substring(1), 'i') : binaryName;
-  for (const candidateDir of candidates) {
-    if (!fs.existsSync(candidateDir)) {
+  const dirs = [
+    '/usr/local/bin',
+    '/usr/local/sbin',
+    '/usr/bin',
+    '/usr/sbin',
+    '/bin',
+    '/sbin',
+    path.join(process.env.HOME || '/', 'bin'),
+    '/opt/homebrew/bin'
+  ];
+
+  for (const d of dirs) {
+    if (!fs.existsSync(d)) {
       continue;
     }
-    const candidatePath = findBinary(candidateDir, pattern, false, () => undefined);
-    if (candidatePath) {
-      return candidatePath;
+    const p = findBinary(d, pattern, false, () => undefined);
+    if (p) {
+      return p;
     }
   }
 
