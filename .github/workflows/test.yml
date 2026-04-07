@@ -31,12 +31,14 @@ jobs:
         uses: skoszewski/setup-github-release@v1
         with:
           repository: 'gohugoio/hugo'
-          file-name: '~hugo_extended_[^a-z]'
+          file-name: '~hugo_extended_[^a-z].*{{SYSTEM}}-{{ARCH}}'
+          file-type: 'archive'
 
       - name: Setup RClone
         uses: skoszewski/setup-github-release@v1
         with:
           repository: 'rclone/rclone'
+          file-type: 'archive'
 
       - name: Verify Installation
         run: |
