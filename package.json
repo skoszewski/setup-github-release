@@ -22,17 +22,17 @@
   "author": "Sławomir Koszewski",
   "license": "MIT",
   "engines": {
-    "node": ">=24"
+    "node": "24.x"
   },
   "dependencies": {
-    "@actions/core": "^1.11.0",
-    "@actions/tool-cache": "^2.0.2",
-    "commander": "^14.0.3",
-    "minimatch": "^10.2.5"
+    "@actions/core": "latest",
+    "@actions/tool-cache": "latest",
+    "commander": "latest",
+    "minimatch": "latest"
   },
   "devDependencies": {
-    "@types/node": "^25.0.0",
-    "esbuild": "^0.27.2",
-    "typescript": "^5.9.0"
+    "@types/node": "^24",
+    "esbuild": "latest",
+    "typescript": "latest"
   }
 }
