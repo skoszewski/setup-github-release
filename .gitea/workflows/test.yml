@@ -34,7 +34,7 @@ jobs:
         uses: ./
         with:
           repository: 'gohugoio/hugo'
-          file-name: '~hugo_extended_[^a-z]'
+          file-name: '~hugo_extended_[^a-z].*{{SYSTEM}}-{{ARCH}}'
           file-type: 'archive'
           token: ${{ secrets.GH_TOKEN }}
           update-cache: 'always'
