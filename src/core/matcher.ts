@@ -11,9 +11,22 @@ const knownFileTypes: Record<string, string> = {
   targz: '*.{tgz,tar.gz}',
 };
 
-function filterByRegex(assets: ReleaseAsset[], pattern: string): ReleaseAsset[] {
+function debugAssetList(label: string, assets: ReleaseAsset[]): void {
+  console.debug(label);
+  for (const asset of assets) {
+    console.debug(`- ${asset.name}`);
+  }
+}
+
+function filterByRegex(assets: ReleaseAsset[], pattern: string, dryRun?: boolean): ReleaseAsset[] {
   const regex = new RegExp(pattern, 'i');
-  return assets.filter((asset) => regex.test(asset.name));
+  const filtered = assets.filter((asset) => regex.test(asset.name));
+  if (dryRun) {
+    console.debug(`Filtering assets with regex: ${pattern}`);
+    debugAssetList('Assets:', assets);
+    debugAssetList('Matched assets:', filtered);
+  }
+  return filtered;
 }
 
 function replacePlatformPlaceholders(pattern: string, platform: PlatformInfo): string {
@@ -22,7 +35,7 @@ function replacePlatformPlaceholders(pattern: string, platform: PlatformInfo): s
     .replace(/{{ARCH}}/g, platform.archPattern);
 }
 
-export function getMatchingAsset(assets: ReleaseAsset[], platform: PlatformInfo, fileName?: string, fileType?: string): ReleaseAsset {
+export function getMatchingAsset(assets: ReleaseAsset[], platform: PlatformInfo, fileName?: string, fileType?: string, dryRun?: boolean): ReleaseAsset {
   // Filename provided as literal string (no ~): exact match.
   if (fileName && !fileName.startsWith('~')) {
     const exactMatches = assets.filter((asset) => asset.name === fileName);
@@ -42,7 +55,7 @@ export function getMatchingAsset(assets: ReleaseAsset[], platform: PlatformInfo,
     } else if (fileType.startsWith('~')) {
       // 3. Custom regex fileType: match regex at end of string.
       const fileTypeRegex = `${fileType.substring(1)}$`;
-      fileTypeFilteredAssets = filterByRegex(assets, fileTypeRegex);
+      fileTypeFilteredAssets = filterByRegex(assets, fileTypeRegex, dryRun);
     } else {
       // 4. Custom extension fileType: treat as plain extension glob.
       const extension = fileType.replace(/^\./, '');
@@ -54,7 +67,7 @@ export function getMatchingAsset(assets: ReleaseAsset[], platform: PlatformInfo,
   // 4. Filename provided with ~: platform placeholder expansion and regex filtering.
   if (fileName && fileName.startsWith('~')) {
     const fileNamePattern = replacePlatformPlaceholders(fileName.substring(1), platform);
-    const fileNameFilteredAssets = filterByRegex(fileTypeFilteredAssets, fileNamePattern);
+    const fileNameFilteredAssets = filterByRegex(fileTypeFilteredAssets, fileNamePattern, dryRun);
     if (fileNameFilteredAssets.length !== 1) {
       throw new Error(`Expected exactly one asset to match the filename regex, matched: ${fileNameFilteredAssets.length}`);
     }
@@ -63,7 +76,7 @@ export function getMatchingAsset(assets: ReleaseAsset[], platform: PlatformInfo,
 
   // 5. No filename: use default {{SYSTEM}}-{{ARCH}} regex.
   const defaultPattern = replacePlatformPlaceholders('{{SYSTEM}}[_-]{{ARCH}}', platform);
-  const defaultFilteredAssets = filterByRegex(fileTypeFilteredAssets, defaultPattern);
+  const defaultFilteredAssets = filterByRegex(fileTypeFilteredAssets, defaultPattern, dryRun);
 
   // 6. Zero or multiple matches are errors.
   if (defaultFilteredAssets.length !== 1) {

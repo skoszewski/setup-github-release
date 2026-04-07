@@ -19,8 +19,8 @@ export const systemPatterns: Record<string, string> = {
 };
 
 export const archPatterns: Record<string, string> = {
-  x64: '(x86_64|x64|amd64)',
-  arm64: '(aarch64|arm64)'
+  x64: '(x86_64|x64|amd64|universal)',
+  arm64: '(aarch64|arm64|universal)'
 };
 
 export function getPlatformInfo(overrides?: PlatformOverrides): PlatformInfo {
