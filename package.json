@@ -1,5 +1,5 @@
 {
-  "name": "install-github-release",
+  "name": "@slawek/install-github-release",
   "version": "1.0.0",
   "description": "A GitHub Action and CLI tool to download and install binaries from GitHub releases",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
   "author": "Sławomir Koszewski",
   "license": "MIT",
   "engines": {
-    "node": "24.x"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "@actions/core": "3.0.0",
