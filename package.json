@@ -1,6 +1,6 @@
 {
-  "name": "@slawek/install-github-release",
-  "version": "1.0.1",
+  "name": "@koszewscy/install-github-release",
+  "version": "1.0.0",
   "description": "A GitHub Action and CLI tool to download and install binaries from GitHub releases",
   "main": "dist/index.js",
   "bin": {
