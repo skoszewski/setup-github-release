@@ -32,7 +32,10 @@
   },
   "devDependencies": {
     "@types/node": "^24",
-    "esbuild": "0.28.0",
+    "esbuild": "^0.28.1",
     "typescript": "6.0.2"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
   }
 }
