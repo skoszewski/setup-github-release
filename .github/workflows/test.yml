@@ -18,27 +18,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      # Let's test the token first.
       - name: Check Authentication
-        uses: skoszewski/setup-github-release/check-token@v1
+        uses: ./check-token
+        with:
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Go ACME Setup
-        uses: skoszewski/setup-github-release@v1
+        uses: ./
         with:
           repository: 'go-acme/lego'
+          file-type: 'archive'
+          token: ${{ secrets.GH_TOKEN }}
+          update-cache: 'always'
 
       - name: Setup Hugo
-        uses: skoszewski/setup-github-release@v1
+        uses: ./
         with:
           repository: 'gohugoio/hugo'
           file-name: '~hugo_extended_[^a-z].*{{SYSTEM}}-{{ARCH}}'
           file-type: 'archive'
+          token: ${{ secrets.GH_TOKEN }}
+          update-cache: 'always'
 
       - name: Setup RClone
-        uses: skoszewski/setup-github-release@v1
+        uses: ./
         with:
           repository: 'rclone/rclone'
           file-type: 'archive'
+          token: ${{ secrets.GH_TOKEN }}
+          update-cache: 'always'
 
       - name: Verify Installation
         run: |
