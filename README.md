@@ -1,5 +1,7 @@
 # Setup GitHub Release Action
 
+![Test suite status](https://gitea.koszewscy.waw.pl/koszewscy/setup-github-release/actions/workflows/test.yml/badge.svg?branch=main)
+
 This project implements a GitHub Action (`setup-github-release`) and a CLI tool (`install-github-release`) that downloads a release asset from a specified GitHub repository, extracts it, searches for a binary within the extracted files, and prepares the runtime environment.
 
 ## Installation / Setup
