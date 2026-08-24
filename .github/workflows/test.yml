@@ -20,15 +20,12 @@ jobs:
 
       - name: Check Authentication
         uses: ./check-token
-        with:
-          token: ${{ secrets.GH_TOKEN }}
 
       - name: Go ACME Setup
         uses: ./
         with:
           repository: 'go-acme/lego'
           file-type: 'archive'
-          token: ${{ secrets.GH_TOKEN }}
           update-cache: 'always'
 
       - name: Setup Hugo
@@ -37,7 +34,6 @@ jobs:
           repository: 'gohugoio/hugo'
           file-name: '~hugo_extended_[^a-z].*{{SYSTEM}}-{{ARCH}}'
           file-type: 'archive'
-          token: ${{ secrets.GH_TOKEN }}
           update-cache: 'always'
 
       - name: Setup RClone
@@ -45,7 +41,6 @@ jobs:
         with:
           repository: 'rclone/rclone'
           file-type: 'archive'
-          token: ${{ secrets.GH_TOKEN }}
           update-cache: 'always'
 
       - name: Verify Installation
