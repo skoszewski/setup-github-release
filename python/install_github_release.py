@@ -327,10 +327,71 @@ def install_github_release(repository, *, list_only=False, app_name=None, file_n
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+BASH_COMPLETION = '''\
+_install_github_release_complete() {
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="--dry-run -l --list -a --app-name -f --file-name -b --binary-name -t --file-type -p --install-path -o --output-directory -j --releases-json --system --arch -k --token -d --debug --completion -h --help"
+
+    case "$prev" in
+        -t|--file-type)
+            COMPREPLY=( $(compgen -W "archive package linux macos targz" -- "$cur") )
+            return 0
+            ;;
+        --completion)
+            COMPREPLY=( $(compgen -W "bash zsh" -- "$cur") )
+            return 0
+            ;;
+        -p|--install-path|-o|--output-directory)
+            COMPREPLY=( $(compgen -d -- "$cur") )
+            return 0
+            ;;
+    esac
+
+    COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+}
+complete -F _install_github_release_complete install_github_release.py
+'''
+
+ZSH_COMPLETION = '''\
+#compdef install_github_release.py
+compdef _install_github_release install_github_release.py
+
+_install_github_release() {
+    local -a options
+    options=(
+        '(-l --list)'{-l,--list}'[List available assets from latest release and exit]::repository:'
+        '(-a --app-name)'{-a,--app-name}'[Application name]:name:'
+        '(-f --file-name)'{-f,--file-name}'[Asset file name or regex pattern]:name:'
+        '(-b --binary-name)'{-b,--binary-name}'[Binary name]:name:'
+        '(-t --file-type)'{-t,--file-type}'[Asset type selector]:type:(archive package linux macos targz)'
+        '(-p --install-path)'{-p,--install-path}'[Custom installation directory]:path:_files -/'
+        '(-o --output-directory)'{-o,--output-directory}'[Download-only output directory]:path:_files -/'
+        '(-j --releases-json)'{-j,--releases-json}'[Download latest release JSON only]'
+        '--system[Override detected system]:system:'
+        '--arch[Override detected architecture]:arch:'
+        '(-k --token)'{-k,--token}'[GitHub token]:token:'
+        '(-d --debug)'{-d,--debug}'[Enable debug logging]'
+        '--dry-run[Run in test mode]'
+        '--completion[Print shell completion script]:shell:(bash zsh)'
+        '(-h --help)'{-h,--help}'[Show help message]'
+        '1:repository:'
+    )
+    _arguments -s $options
+}
+
+# don't run the completion function when being source-ed or eval-ed
+if [ "$funcstack[1]" = "_install_github_release" ]; then
+    _install_github_release
+fi
+'''
+
+
 def main():
     """Parse command-line arguments and run install_github_release, reporting errors via the exit code."""
     parser = argparse.ArgumentParser(
-        prog='install-github-release',
         usage='%(prog)s [options] <repository>',
         allow_abbrev=False,
     )
@@ -351,7 +412,12 @@ def main():
     parser.add_argument('--arch', metavar='name', help='Override detected architecture for asset matching')
     parser.add_argument('-k', '--token', metavar='token', help='GitHub token')
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug logging')
+    parser.add_argument('--completion', choices=['bash', 'zsh'], help='Print a shell completion script and exit')
     args = parser.parse_args()
+
+    if args.completion:
+        print(BASH_COMPLETION if args.completion == 'bash' else ZSH_COMPLETION, end='')
+        sys.exit(0)
 
     list_repo = args.list if isinstance(args.list, str) else None
     repository = list_repo or args.repository
