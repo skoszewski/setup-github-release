@@ -6,3 +6,4 @@ lib/
 .github/*.md
 dist/cli.js
 __pycache__
+.vscode
