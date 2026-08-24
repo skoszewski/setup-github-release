@@ -10,6 +10,7 @@ on:
       - 'dist/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'python/**'
 
 jobs:
   test:
@@ -57,3 +58,27 @@ jobs:
           hugo version
           printf "\nRClone:\n"
           rclone version
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Go ACME Setup (Python CLI)
+        run: python3 python/install_github_release.py go-acme/lego -t archive -k "${{ secrets.GH_TOKEN }}" -p /tmp/python-cli-test
+
+      - name: Setup Hugo (Python CLI)
+        run: python3 python/install_github_release.py gohugoio/hugo -f '~hugo_extended_[^a-z].*{{SYSTEM}}-{{ARCH}}' -t archive -k "${{ secrets.GH_TOKEN }}" -p /tmp/python-cli-test
+
+      - name: Setup RClone (Python CLI)
+        run: python3 python/install_github_release.py rclone/rclone -t archive -k "${{ secrets.GH_TOKEN }}" -p /tmp/python-cli-test
+
+      - name: Verify Python CLI Installation
+        run: |
+          echo "Verifying tools installed via the Python CLI..."
+          printf "\nGo ACME Lego:\n"
+          /tmp/python-cli-test/lego -v
+          printf "\nHugo:\n"
+          /tmp/python-cli-test/hugo version
+          printf "\nRClone:\n"
+          /tmp/python-cli-test/rclone version
