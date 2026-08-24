@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Check Authentication
+        run: python3 python/check_github_token.py "${{ github.token }}"
+
       - name: Go ACME Setup
         run: python3 python/install_github_release.py go-acme/lego -t archive -k "${{ github.token }}" -p /tmp/python-cli-test
 
