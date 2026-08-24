@@ -5,3 +5,4 @@ lib/
 .DS_Store
 .github/*.md
 dist/cli.js
+__pycache__
